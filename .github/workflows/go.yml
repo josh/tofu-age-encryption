@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       AGE_VERSION: "1.2.1"
+      TOFU_VERSION: "1.10.6"
 
     steps:
       - uses: actions/checkout@v5
@@ -20,6 +21,14 @@ jobs:
           tar -xzf age.tar.gz
           chmod +x age/age
           sudo mv age/age /usr/local/bin/age
+
+      - name: Install tofu
+        run: |
+          set -o xtrace
+          curl --location https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.tar.gz --output tofu.tar.gz
+          tar -xzf tofu.tar.gz
+          chmod +x tofu
+          sudo mv tofu /usr/local/bin/tofu
 
       - uses: actions/setup-go@v6
         with:
