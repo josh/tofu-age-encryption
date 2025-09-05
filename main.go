@@ -82,7 +82,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to stringify output: %v", err)
 	}
-	_, err = os.Stdout.Write(outputData)
+	_, err = os.Stdout.Write(append(outputData, []byte("\n")...))
 	if err != nil {
 		log.Fatalf("Failed to write output: %v", err)
 	}
