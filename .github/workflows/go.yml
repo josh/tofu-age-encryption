@@ -21,7 +21,7 @@ jobs:
           chmod +x age/age
           sudo mv age/age /usr/local/bin/age
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
