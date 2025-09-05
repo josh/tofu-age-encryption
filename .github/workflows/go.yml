@@ -1,0 +1,34 @@
+name: Go
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    env:
+      AGE_VERSION: "1.2.1"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install age
+        run: |
+          set -o xtrace
+          curl --location https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz --output age.tar.gz
+          tar -xzf age.tar.gz
+          chmod +x age/age
+          sudo mv age/age /usr/local/bin/age
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: |
+          go build
+
+      - name: Test
+        run: |
+          go test
