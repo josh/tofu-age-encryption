@@ -1,0 +1,7 @@
+! exec tofu-age-encryption --invalid
+cmp stdout stdout.json
+cmp stderr stderr.txt
+
+-- stdout.json --
+-- stderr.txt --
+usage: expected --encrypt or --decrypt
