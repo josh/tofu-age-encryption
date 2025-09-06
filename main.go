@@ -308,10 +308,13 @@ func ageEncryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte
 	if len(cfg.ageRecipients) == 0 {
 		return nil, errors.New("no recipients specified")
 	}
-	args := []string{"--encrypt"}
-	for _, r := range cfg.ageRecipients {
-		args = append(args, "--recipient", r)
+	recipientsFile, cleanup, err := writeTempRecipients(cfg.ageRecipients)
+	if err != nil {
+		return nil, fmt.Errorf("write recipients to temp file: %w", err)
 	}
+	defer cleanup()
+
+	args := []string{"--encrypt", "--recipients-file", recipientsFile}
 	cmd := exec.CommandContext(ctx, cfg.ageProgram, args...)
 	cmd.Stdin = bytes.NewReader(payload)
 
@@ -440,16 +443,18 @@ func runKeyCommand(ctx context.Context, command string) (string, error) {
 	return key, nil
 }
 
-func writeTempIdentity(identity string) (string, func(), error) {
-	tmpfile, err := os.CreateTemp("", "age-identity-*")
+func writeTempLines(lines []string, pattern string) (string, func(), error) {
+	tmpfile, err := os.CreateTemp("", pattern)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
 
-	if _, err := tmpfile.WriteString(identity + "\n"); err != nil {
-		_ = tmpfile.Close()
-		_ = os.Remove(tmpfile.Name())
-		return "", nil, fmt.Errorf("failed to write identity to temp file: %w", err)
+	for _, line := range lines {
+		if _, err := tmpfile.WriteString(line + "\n"); err != nil {
+			_ = tmpfile.Close()
+			_ = os.Remove(tmpfile.Name())
+			return "", nil, fmt.Errorf("failed to write temp file: %w", err)
+		}
 	}
 
 	if err := tmpfile.Close(); err != nil {
@@ -462,4 +467,12 @@ func writeTempIdentity(identity string) (string, func(), error) {
 	}
 
 	return tmpfile.Name(), cleanup, nil
+}
+
+func writeTempIdentity(identity string) (string, func(), error) {
+	return writeTempLines([]string{identity}, "age-identity-*")
+}
+
+func writeTempRecipients(recipients []string) (string, func(), error) {
+	return writeTempLines(recipients, "age-recipients-*")
 }
