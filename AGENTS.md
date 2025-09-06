@@ -24,6 +24,17 @@ sudo apt-get install -y tofu
 $ go mod download
 ```
 
+## Test Environment
+
+The test suite expects these binaries to be available in the system `PATH`:
+
+- `age`
+- `tofu`
+- `sh`
+- `tail`
+- `sed`
+- `cat`
+
 ## Testing
 
 Run all tests with:
