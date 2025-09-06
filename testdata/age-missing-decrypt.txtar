@@ -1,0 +1,12 @@
+stdin input.json
+! exec sh -c 'cmd=$(command -v tofu-age-encryption); PATH=/nonexistent "$cmd" --decrypt'
+cmp stdout stdout.txt
+cmp stderr stderr.txt
+
+-- input.json --
+{"payload":"aGVsbG8="}
+
+-- stdout.txt --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+-- stderr.txt --
+Failed to decrypt payload: failed to decrypt payload with age: exec: "age": executable file not found in $PATH
