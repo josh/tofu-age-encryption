@@ -223,6 +223,9 @@ func main() {
 }
 
 func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string, recipientsFile string, payload []byte) ([]byte, error) {
+	if recipientsFile == "" && len(pubkeys) == 0 {
+		return nil, errors.New("no recipients specified")
+	}
 	args := []string{"--encrypt"}
 	if recipientsFile != "" {
 		args = append(args, "--recipients-file", recipientsFile)
@@ -251,6 +254,9 @@ func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string,
 }
 
 func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, identity string, payload []byte) ([]byte, error) {
+	if identityFile == "" && identity == "" {
+		return nil, errors.New("no identity specified")
+	}
 	args := []string{"--decrypt"}
 	var extra []*os.File
 	if identityFile != "" {
