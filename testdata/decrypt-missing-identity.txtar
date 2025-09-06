@@ -1,6 +1,6 @@
 env AGE_IDENTITY_FILE=missing
 
-! exec sh -c 'tofu-age-encryption --decrypt <input.json'
+! exec tofu-age-encryption --decrypt --input-file input.json
 cmp stdout stdout.json
 cmp stderr stderr.txt
 

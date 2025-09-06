@@ -1,5 +1,5 @@
 env AGE_IDENTITY_COMMAND='cat $WORK/key.txt'
-exec sh -c 'tofu-age-encryption --decrypt <cipher.json'
+exec tofu-age-encryption --decrypt --input-file cipher.json
 cmp stdout stdout.txt
 cmp stderr stderr.txt
 
