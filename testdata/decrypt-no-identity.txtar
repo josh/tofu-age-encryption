@@ -1,0 +1,12 @@
+stdin input.json
+! tofu-age-encryption --decrypt
+cmp stdout stdout.txt
+cmp stderr stderr.txt
+
+-- input.json --
+{"payload":"c2VjcmV0"}
+
+-- stdout.txt --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+-- stderr.txt --
+Failed to decrypt payload: no identity specified

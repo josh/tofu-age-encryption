@@ -1,5 +1,5 @@
 stdin input.json
-! tofu-age-encryption --encrypt --age-path /nonexistent
+! tofu-age-encryption --encrypt --age-path /nonexistent --age-recipient dummy
 cmp stdout stdout.txt
 cmp stderr stderr.txt
 
