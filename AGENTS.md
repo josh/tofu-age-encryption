@@ -5,7 +5,20 @@ This project is written in Go and uses Go modules for dependency management. The
 ## Setup
 
 1. Install Go 1.24 or later.
-2. Download dependencies with:
+2. Install age:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y age
+```
+
+3. Install OpenTofu:
+
+```sh
+sudo apt-get install -y tofu
+```
+
+4. Download dependencies with:
 
 ```sh
 $ go mod download
