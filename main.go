@@ -238,7 +238,7 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, ide
 		}
 		extra = append(extra, r)
 		fd := 3 + len(extra) - 1
-		args = append(args, "--identity", fmt.Sprintf("/proc/self/fd/%d", fd))
+		args = append(args, "--identity", fmt.Sprintf("/dev/fd/%d", fd)) // works on Linux and macOS
 		defer r.Close()
 	}
 
