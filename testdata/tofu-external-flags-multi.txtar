@@ -1,0 +1,86 @@
+env TF_INPUT=false
+env TF_CLI_ARGS=-no-color
+
+exec tofu init
+cmp stdout init-stdout.txt
+cmp stderr init-stderr.txt
+
+exec tofu apply -auto-approve -lock=false
+cmp stdout apply-1-stdout.txt
+cmp stderr apply-1-stderr.txt
+
+exec tofu apply -auto-approve -lock=false
+cmp stdout apply-2-stdout.txt
+cmp stderr apply-2-stderr.txt
+
+-- key.txt --
+# created: 2025-09-05T17:27:52-07:00
+# public key: age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
+
+-- init-stdout.txt --
+
+Initializing the backend...
+
+Initializing provider plugins...
+
+OpenTofu has been successfully initialized!
+
+You may now begin working with OpenTofu. Try running "tofu plan" to see
+any changes that are required for your infrastructure. All OpenTofu commands
+should now work.
+
+If you ever set or change modules or backend configuration for OpenTofu,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+-- init-stderr.txt --
+-- apply-1-stdout.txt --
+
+Changes to Outputs:
+  + foo = "bar"
+
+You can apply this plan to save these new output values to the OpenTofu
+state, without changing any real infrastructure.
+
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+foo = "bar"
+-- apply-1-stderr.txt --
+-- apply-2-stdout.txt --
+
+No changes. Your infrastructure matches the configuration.
+
+OpenTofu has compared your real infrastructure against your configuration and
+found no differences, so no changes are needed.
+
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+foo = "bar"
+-- apply-2-stderr.txt --
+-- main.tf --
+terraform {
+  encryption {
+    method "external" "age" {
+      encrypt_command = ["tofu-age-encryption", "--encrypt", "--age-recipient", "age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt", "--age-recipient", "age1a4kz2yafzf9g4nvkuc8uhz0pnsv4lmdzkxzs76m4v8kw4swmhplst2cc5j"]
+      decrypt_command = ["tofu-age-encryption", "--decrypt", "--age-identity-file", "key.txt"]
+    }
+
+    state {
+      method = method.external.age
+      enforced = true
+    }
+
+    plan {
+      method = method.external.age
+      enforced = true
+    }
+  }
+}
+
+output "foo" {
+  value = "bar"
+}

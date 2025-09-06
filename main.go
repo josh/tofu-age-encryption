@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // constants settable at build time.
@@ -33,6 +34,22 @@ type Output struct {
 	Payload []byte `json:"payload"`
 }
 
+type sliceFlag []string
+
+func (s *sliceFlag) String() string {
+	return strings.Join(*s, ",")
+}
+
+func (s *sliceFlag) Set(value string) error {
+	for _, part := range strings.Split(value, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			*s = append(*s, part)
+		}
+	}
+	return nil
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -48,12 +65,20 @@ func main() {
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
 	decrypt := fs.Bool("decrypt", false, "decrypt payload")
 	versionFlag := fs.Bool("version", false, "print version")
-	ageRecipientFlag := fs.String("age-recipient", os.Getenv("AGE_RECIPIENT"), "age recipient")
+	var ageRecipients sliceFlag
+	fs.Var(&ageRecipients, "age-recipient", "age recipient")
 	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
 		os.Exit(1)
+	}
+
+	if len(ageRecipients) == 0 {
+		if env := os.Getenv("AGE_RECIPIENT"); env != "" {
+			// Fall back to comma-separated AGE_RECIPIENT when no flags are provided.
+			_ = ageRecipients.Set(env)
+		}
 	}
 
 	if *versionFlag {
@@ -94,11 +119,10 @@ func main() {
 	}
 
 	ageIdentityFile := *ageIdentityFileFlag
-	ageRecipient := *ageRecipientFlag
 
 	var outputPayload []byte
 	if *encrypt {
-		outputPayload, err = ageEncryptPayload(ctx, ageProgram, ageRecipient, inputData.Payload)
+		outputPayload, err = ageEncryptPayload(ctx, ageProgram, []string(ageRecipients), inputData.Payload)
 		if err != nil {
 			log.Fatalf("Failed to encrypt payload: %v", err)
 		}
@@ -123,8 +147,12 @@ func main() {
 	}
 }
 
-func ageEncryptPayload(ctx context.Context, ageProgram string, pubkey string, payload []byte) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, ageProgram, "--encrypt", "--recipient", pubkey)
+func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string, payload []byte) ([]byte, error) {
+	args := []string{"--encrypt"}
+	for _, r := range pubkeys {
+		args = append(args, "--recipient", r)
+	}
+	cmd := exec.CommandContext(ctx, ageProgram, args...)
 	cmd.Stdin = bytes.NewReader(payload)
 
 	out, err := cmd.Output()
