@@ -1,6 +1,7 @@
-env AGE_IDENTITY_FILE=missing
+env AGE_IDENTITY_FILE=/tmp/missing
 
-! exec tofu-age-encryption --decrypt --input-file input.json
+stdin input.json
+! exec tofu-age-encryption --decrypt
 cmp stdout stdout.json
 cmp stderr stderr.txt
 
@@ -10,5 +11,5 @@ cmp stderr stderr.txt
 -- stdout.json --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
-Failed to decrypt payload: age: error: reading "missing": failed to open file: open missing: no such file or directory
+Failed to decrypt payload: age: error: reading "/tmp/missing": failed to open file: open /tmp/missing: no such file or directory
 age: report unexpected or unhelpful errors at https://filippo.io/age/report

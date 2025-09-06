@@ -1,9 +1,9 @@
-env AGE_IDENTITY_COMMAND='cat $WORK/key.txt'
-exec tofu-age-encryption --decrypt --input-file cipher.json
-cmp stdout stdout.txt
-cmp stderr stderr.txt
+env AGE_IDENTITY_CMD='cat key.txt'
+stdin input.json
+exec tofu-age-encryption --decrypt
+cmp stdout stdout.json
 
--- cipher.json --
+-- input.json --
 {"payload":"YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmRnBqV1pZWDV3WHhQOXRjL3JLN2ZxdnBvTW02THdLOXIvVFVKa2s2S1Y0CkFjV1RZK3BYM01zaDBLbkIrK0tHczhJVVRvU3ZJY1ROV0JvNDNDaE9OVDQKLS0tIENqRjlzUzNSY2pta1JkeEFmR1pYTGpNMmREbk1SSEtTVS9mSHEwQWZSZVUK01JDFoTH0Yl/s/VJqNKy7Tyo7xMYwJHZWswI3ANcF3LoPaUQAU8="}
 
 -- key.txt --
@@ -11,7 +11,6 @@ cmp stderr stderr.txt
 # public key: age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
 AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
 
--- stdout.txt --
+-- stdout.json --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
 {"payload":"c2VjcmV0"}
--- stderr.txt --

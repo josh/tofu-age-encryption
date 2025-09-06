@@ -1,24 +1,26 @@
 env AGE_RECIPIENT=age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
 env SOPS_AGE_RECIPIENTS=age19xls7dzpf24kzfd0vu2vy7w3e4r7cxsxgwgqeccupzswzpktxu6qqqd7vt
-env AGE_IDENTITY_FILE=$WORK/key2.txt
-exec tofu-age-encryption --encrypt --input-file plain.json --output-file cipher-all.json
-stdout ''
-stderr ''
-exec tail -n +2 cipher-all.json
-cp stdout cipher.json
-exec tofu-age-encryption --decrypt --input-file cipher.json
-cmp stdout stdout.txt
-cmp stderr stderr.txt
+env AGE_IDENTITY_FILE=key.txt
 
--- plain.json --
+stdin input.json
+exec tofu-age-encryption --encrypt
+
+stdin stdout
+exec tail -n +2
+cp stdout cipher.json
+
+stdin cipher.json
+exec tofu-age-encryption --decrypt
+cmp stdout stdout.json
+
+-- input.json --
 {"payload":"c2VjcmV0"}
 
--- key2.txt --
+-- key.txt --
 # created: 2025-09-06T20:25:14Z
 # public key: age19xls7dzpf24kzfd0vu2vy7w3e4r7cxsxgwgqeccupzswzpktxu6qqqd7vt
 AGE-SECRET-KEY-17Y29Y9E2XTJ6ZPZ6X3YNSE3NVREHJG64GFPYWNRF0MSU4L0E3V5Q84AFZH
 
--- stdout.txt --
+-- stdout.json --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
 {"payload":"c2VjcmV0"}
--- stderr.txt --

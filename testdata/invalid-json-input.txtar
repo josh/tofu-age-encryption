@@ -1,11 +1,11 @@
 stdin stdin.json
 ! exec tofu-age-encryption --encrypt
-cmp stdout stdout.txt
+cmp stdout stdout.json
 cmp stderr stderr.txt
 
 -- stdin.json --
 {
--- stdout.txt --
+-- stdout.json --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
 Failed to read stdin: unexpected EOF

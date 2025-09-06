@@ -1,15 +1,15 @@
-env AGE_IDENTITY_FILE=key-b.txt
-! exec tofu-age-encryption --decrypt --input-file cipher.json
+stdin input.json
+! exec tofu-age-encryption --decrypt --age-identity-file key.txt
 cmp stdout stdout.json
 cmp stderr stderr.txt
 
--- cipher.json --
+-- input.json --
 {"payload":"YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmRnBqV1pZWDV3WHhQOXRjL3JLN2ZxdnBvTW02THdLOXIvVFVKa2s2S1Y0CkFjV1RZK3BYM01zaDBLbkIrK0tHczhJVVRvU3ZJY1ROV0JvNDNDaE9OVDQKLS0tIENqRjlzUzNSY2pta1JkeEFmR1pYTGpNMmREbk1SSEtTVS9mSHEwQWZSZVUK01JDFoTH0Yl/s/VJqNKy7Tyo7xMYwJHZWswI3ANcF3LoPaUQAU8="}
 
--- key-b.txt --
-# created: 2025-09-06T01:25:41Z
-# public key: age1yh02jaysl73ph50r4xrage2hvstp9hjy72r4p4tlv99zveyf9fvsxc4h9n
-AGE-SECRET-KEY-1UTNEY8FW0GN8CXZT8KERWNL9TGDVMQYRT86C6WZQGKTDWTRL7E4Q6CMNMM
+-- key.txt --
+# created: 2025-09-06T16:44:17-07:00
+# public key: age1sfjgjpfujnr92hs7llr79ssvlesaxkaeewsa7gqv7aspwsfv6yas4ch6ps
+AGE-SECRET-KEY-19LDXPQ0ZFT5VRG2LT84470RAJ79QZU9HWJJ97LM7YF0KWX6GCGHSLEVXKZ
 
 -- stdout.json --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
