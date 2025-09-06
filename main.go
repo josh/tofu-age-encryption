@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -35,7 +36,19 @@ type Output struct {
 func main() {
 	ctx := context.Background()
 
-	if len(os.Args) > 1 && (os.Args[1] == "--version") {
+	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	encrypt := fs.Bool("encrypt", false, "encrypt payload")
+	decrypt := fs.Bool("decrypt", false, "decrypt payload")
+	versionFlag := fs.Bool("version", false, "print version")
+	ageRecipientFlag := fs.String("age-recipient", os.Getenv("AGE_RECIPIENT"), "age recipient")
+	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
+		os.Exit(1)
+	}
+
+	if *versionFlag {
 		fmt.Printf("tofu-age-encryption version %s\n", Version)
 		return
 	}
@@ -43,11 +56,7 @@ func main() {
 	log.Default().SetOutput(os.Stderr)
 	log.Default().SetFlags(0) // suppress timestamps for deterministic output
 
-	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
-		os.Exit(1)
-	}
-	if os.Args[1] != "--encrypt" && os.Args[1] != "--decrypt" {
+	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {
 		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
 		os.Exit(1)
 	}
@@ -81,18 +90,17 @@ func main() {
 		log.Fatalf("Failed to parse stdin: %v", err)
 	}
 
-	// FIXME: Get age identity and recipient from env vars for now
-	ageIdentityFile := os.Getenv("AGE_IDENTITY_FILE")
-	ageRecipient := os.Getenv("AGE_RECIPIENT")
+	ageIdentityFile := *ageIdentityFileFlag
+	ageRecipient := *ageRecipientFlag
 
 	var outputPayload []byte
-	switch os.Args[1] {
-	case "--encrypt":
+	if *encrypt {
 		outputPayload, err = ageEncryptPayload(ctx, ageProgram, ageRecipient, inputData.Payload)
 		if err != nil {
 			log.Fatalf("Failed to encrypt payload: %v", err)
 		}
-	case "--decrypt":
+	}
+	if *decrypt {
 		outputPayload, err = ageDecryptPayload(ctx, ageProgram, ageIdentityFile, inputData.Payload)
 		if err != nil {
 			log.Fatalf("Failed to decrypt payload: %v", err)
