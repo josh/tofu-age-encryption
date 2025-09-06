@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -44,15 +45,14 @@ const (
 )
 
 type config struct {
-	mode              mode
-	ageRecipients     []string
-	ageRecipientsFile string
-	ageIdentityFile   string
-	ageIdentity       string
-	ageProgram        string
-	inputFile         string
-	outputFile        string
-	version           bool
+	mode            mode
+	ageRecipients   []string
+	ageIdentityFile string
+	ageIdentity     string
+	ageProgram      string
+	inputFile       string
+	outputFile      string
+	version         bool
 }
 
 func (s *sliceFlag) String() string {
@@ -119,13 +119,20 @@ func parseConfig(ctx context.Context, args []string) (config, error) {
 		}
 	}
 
+	if *ageRecipientsFileFlag != "" {
+		rs, err := parseRecipientsFile(*ageRecipientsFileFlag)
+		if err != nil {
+			return config{}, fmt.Errorf("read age recipients file: %w", err)
+		}
+		ageRecipients = append(ageRecipients, rs...)
+	}
+
 	cfg := config{
-		ageRecipients:     []string(ageRecipients),
-		ageRecipientsFile: *ageRecipientsFileFlag,
-		ageProgram:        *ageProgramFlag,
-		inputFile:         *inputFileFlag,
-		outputFile:        *outputFileFlag,
-		version:           *versionFlag,
+		ageRecipients: []string(ageRecipients),
+		ageProgram:    *ageProgramFlag,
+		inputFile:     *inputFileFlag,
+		outputFile:    *outputFileFlag,
+		version:       *versionFlag,
 	}
 
 	if cfg.version {
@@ -255,7 +262,7 @@ func main() {
 		opErr         error
 	)
 	if cfg.mode == modeEncrypt {
-		outputPayload, opErr = ageEncryptPayload(ctx, cfg.ageProgram, cfg.ageRecipients, cfg.ageRecipientsFile, inputData.Payload)
+		outputPayload, opErr = ageEncryptPayload(ctx, cfg.ageProgram, cfg.ageRecipients, inputData.Payload)
 		if opErr != nil {
 			log.Fatalf("Failed to encrypt payload: %v", opErr)
 		}
@@ -279,14 +286,11 @@ func main() {
 	}
 }
 
-func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string, recipientsFile string, payload []byte) ([]byte, error) {
-	if recipientsFile == "" && len(pubkeys) == 0 {
+func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string, payload []byte) ([]byte, error) {
+	if len(pubkeys) == 0 {
 		return nil, errors.New("no recipients specified")
 	}
 	args := []string{"--encrypt"}
-	if recipientsFile != "" {
-		args = append(args, "--recipients-file", recipientsFile)
-	}
 	for _, r := range pubkeys {
 		args = append(args, "--recipient", r)
 	}
@@ -373,6 +377,28 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, ide
 	}
 
 	return out, nil
+}
+
+func parseRecipientsFile(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var recipients []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		recipients = append(recipients, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return recipients, nil
 }
 
 func runKeyCommand(ctx context.Context, command string) (string, error) {
