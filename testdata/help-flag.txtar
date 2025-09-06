@@ -1,13 +1,13 @@
-exec tofu-age-encryption --help
-cmp stdout stdout.txt
+exec sh -c 'tofu-age-encryption --help | sed -E "s|default \"[^\"]*age\"|default \"@AGE_PROGRAM@\"|"'
+cmp stdout help.txt
 ! stderr .
 
--- stdout.txt --
+-- help.txt --
 Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
   -age-identity-file string
     	age identity file
   -age-path string
-    	path to age binary (default "/usr/bin/age")
+    	path to age binary (default "@AGE_PROGRAM@")
   -age-recipient value
     	age recipient
   -decrypt
