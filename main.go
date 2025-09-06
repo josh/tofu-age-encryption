@@ -36,6 +36,13 @@ type Output struct {
 func main() {
 	ctx := context.Background()
 
+	ageProgram := AgeProgram
+	if ageProgram == "" || ageProgram == "age" {
+		if path, err := exec.LookPath("age"); err == nil {
+			ageProgram = path
+		}
+	}
+
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
@@ -43,6 +50,7 @@ func main() {
 	versionFlag := fs.Bool("version", false, "print version")
 	ageRecipientFlag := fs.String("age-recipient", os.Getenv("AGE_RECIPIENT"), "age recipient")
 	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
+	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
 		os.Exit(1)
@@ -61,12 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ageProgram := AgeProgram
-	if ageProgram == "" || ageProgram == "age" {
-		if path, err := exec.LookPath("age"); err == nil {
-			ageProgram = path
-		}
-	}
+	ageProgram = *ageProgramFlag
 
 	header := Header{
 		"OpenTofu-External-Encryption-Method",
