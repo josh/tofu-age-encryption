@@ -40,7 +40,7 @@ func main() {
 	var usage bytes.Buffer
 	fs.SetOutput(&usage)
 	fs.Usage = func() {
-		fmt.Fprintf(&usage, "Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0])
+		fmt.Fprintf(fs.Output(), "Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0])
 		fs.PrintDefaults()
 	}
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
