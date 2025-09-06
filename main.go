@@ -148,17 +148,26 @@ func main() {
 			}
 			ageIdentityFile = file
 			defer cleanup()
-		} else if env := os.Getenv("SOPS_AGE_KEY_CMD"); env != "" {
-			key, err := runKeyCommand(ctx, env)
-			if err != nil {
-				log.Fatalf("Failed to execute SOPS_AGE_KEY_CMD: %v", err)
+		} else {
+			var cmdEnv, cmd string
+			for _, name := range []string{"AGE_IDENTITY_COMMAND", "AGE_IDENTITY_CMD", "SOPS_AGE_KEY_CMD"} {
+				if env := os.Getenv(name); env != "" {
+					cmdEnv, cmd = name, env
+					break
+				}
 			}
-			file, cleanup, err := writeTempIdentity(key)
-			if err != nil {
-				log.Fatalf("Failed to prepare identity: %v", err)
+			if cmd != "" {
+				key, err := runKeyCommand(ctx, cmd)
+				if err != nil {
+					log.Fatalf("Failed to execute %s: %v", cmdEnv, err)
+				}
+				file, cleanup, err := writeTempIdentity(key)
+				if err != nil {
+					log.Fatalf("Failed to prepare identity: %v", err)
+				}
+				ageIdentityFile = file
+				defer cleanup()
 			}
-			ageIdentityFile = file
-			defer cleanup()
 		}
 	}
 
