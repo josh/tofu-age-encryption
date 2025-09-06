@@ -4,4 +4,4 @@ cmp stderr stderr.txt
 
 -- stdout.json --
 -- stderr.txt --
-usage: expected --encrypt or --decrypt
+usage: expected --encrypt or --decrypt or --key-provider
