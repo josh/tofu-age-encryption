@@ -6,6 +6,10 @@ env AGE_IDENTITY_FILE=$WORK/key-a.txt
 exec tofu init
 
 exec tofu apply -auto-approve -lock=false
+exec python -m json.tool terraform.tfstate
+exec cat terraform.tfstate
+! stdout foo
+! stdout bar
 
 env AGE_IDENTITY_FILE=$WORK/key-b.txt
 
