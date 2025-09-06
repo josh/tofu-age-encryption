@@ -20,7 +20,7 @@ jobs:
           curl --location https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz --output age.tar.gz
           tar -xzf age.tar.gz
           chmod +x age/age
-          sudo mv age/age /usr/local/bin/age
+          sudo mv age/age /usr/bin/age
 
       - name: Install tofu
         run: |
@@ -28,7 +28,7 @@ jobs:
           curl --location https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_amd64.tar.gz --output tofu.tar.gz
           tar -xzf tofu.tar.gz
           chmod +x tofu
-          sudo mv tofu /usr/local/bin/tofu
+          sudo mv tofu /usr/bin/tofu
 
       - uses: actions/setup-go@v6
         with:

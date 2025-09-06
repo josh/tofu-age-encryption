@@ -6,7 +6,9 @@ cmp stdout stdout.txt
 Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
   -age-identity-file string
     	age identity file
-  -age-recipient string
+  -age-path string
+    	path to age binary (default "/usr/bin/age")
+  -age-recipient value
     	age recipient
   -decrypt
     	decrypt payload
