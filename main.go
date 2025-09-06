@@ -36,6 +36,24 @@ type Output struct {
 }
 
 type sliceFlag []string
+type mode int
+
+const (
+	modeEncrypt mode = iota
+	modeDecrypt
+)
+
+type config struct {
+	mode              mode
+	ageRecipients     []string
+	ageRecipientsFile string
+	ageIdentityFile   string
+	ageIdentity       string
+	ageProgram        string
+	inputFile         string
+	outputFile        string
+	version           bool
+}
 
 func (s *sliceFlag) String() string {
 	return strings.Join(*s, ",")
@@ -51,9 +69,7 @@ func (s *sliceFlag) Set(value string) error {
 	return nil
 }
 
-func main() {
-	ctx := context.Background()
-
+func parseConfig(ctx context.Context, args []string) (config, error) {
 	ageProgram := AgeProgram
 	if ageProgram == "" || ageProgram == "age" {
 		if path, err := exec.LookPath("age"); err == nil {
@@ -84,28 +100,99 @@ func main() {
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
 	inputFileFlag := fs.String("input-file", "", "read input from file instead of stdin")
 	outputFileFlag := fs.String("output-file", "", "write output to file instead of stdout")
-	if err := fs.Parse(os.Args[1:]); err != nil {
+	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			orig := fs.Output()
 			fs.SetOutput(os.Stdout)
 			fs.Usage()
 			fs.SetOutput(orig)
-			return
+			return config{}, flag.ErrHelp
 		}
-		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
-		os.Exit(1)
+		return config{}, err
 	}
 
 	if len(ageRecipients) == 0 {
 		if env := os.Getenv("AGE_RECIPIENT"); env != "" {
-			// Fall back to comma-separated AGE_RECIPIENT when no flags are provided.
 			_ = ageRecipients.Set(env)
 		} else if env := os.Getenv("SOPS_AGE_RECIPIENTS"); env != "" {
 			_ = ageRecipients.Set(env)
 		}
 	}
 
-	if *versionFlag {
+	cfg := config{
+		ageRecipients:     []string(ageRecipients),
+		ageRecipientsFile: *ageRecipientsFileFlag,
+		ageProgram:        *ageProgramFlag,
+		inputFile:         *inputFileFlag,
+		outputFile:        *outputFileFlag,
+		version:           *versionFlag,
+	}
+
+	if cfg.version {
+		return cfg, nil
+	}
+
+	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {
+		return config{}, fmt.Errorf("expected --encrypt or --decrypt")
+	}
+	if *encrypt {
+		cfg.mode = modeEncrypt
+	} else {
+		cfg.mode = modeDecrypt
+	}
+
+	ageIdentityFile := *ageIdentityFileFlag
+	var ageIdentity string
+	if ageIdentityFile == "" {
+		switch {
+		case *ageIdentityFlag != "":
+			ageIdentity = *ageIdentityFlag
+		case *ageIdentityCommandFlag != "":
+			key, err := runKeyCommand(ctx, *ageIdentityCommandFlag)
+			if err != nil {
+				return config{}, fmt.Errorf("failed to execute age identity command: %w", err)
+			}
+			ageIdentity = key
+		case os.Getenv("SOPS_AGE_KEY_FILE") != "":
+			ageIdentityFile = os.Getenv("SOPS_AGE_KEY_FILE")
+		case os.Getenv("SOPS_AGE_KEY") != "":
+			ageIdentity = os.Getenv("SOPS_AGE_KEY")
+		default:
+			var cmdEnv, cmd string
+			for _, name := range []string{"AGE_IDENTITY_COMMAND", "AGE_IDENTITY_CMD", "SOPS_AGE_KEY_CMD"} {
+				if env := os.Getenv(name); env != "" {
+					cmdEnv, cmd = name, env
+					break
+				}
+			}
+			if cmd != "" {
+				key, err := runKeyCommand(ctx, cmd)
+				if err != nil {
+					return config{}, fmt.Errorf("failed to execute %s: %w", cmdEnv, err)
+				}
+				ageIdentity = key
+			}
+		}
+	}
+	cfg.ageIdentityFile = ageIdentityFile
+	cfg.ageIdentity = ageIdentity
+
+	return cfg, nil
+}
+
+func main() {
+	ctx := context.Background()
+
+	cfg, err := parseConfig(ctx, os.Args[1:])
+	if errors.Is(err, flag.ErrHelp) {
+		return
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
+		os.Exit(1)
+	}
+
+	if cfg.version {
 		fmt.Printf("tofu-age-encryption version %s\n", Version)
 		return
 	}
@@ -113,18 +200,11 @@ func main() {
 	log.Default().SetOutput(os.Stderr)
 	log.Default().SetFlags(0) // suppress timestamps for deterministic output
 
-	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {
-		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
-		os.Exit(1)
-	}
-
-	ageProgram = *ageProgramFlag
-
 	// Configure input reader.
 	in := io.Reader(os.Stdin)
 	inputDesc := "stdin"
-	if *inputFileFlag != "" {
-		f, err := os.Open(*inputFileFlag)
+	if cfg.inputFile != "" {
+		f, err := os.Open(cfg.inputFile)
 		if err != nil {
 			log.Fatalf("Failed to open input file: %v", err)
 		}
@@ -136,8 +216,8 @@ func main() {
 	// Configure output writer.
 	out := io.Writer(os.Stdout)
 	outputDesc := "stdout"
-	if *outputFileFlag != "" {
-		f, err := os.OpenFile(*outputFileFlag, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	if cfg.outputFile != "" {
+		f, err := os.OpenFile(cfg.outputFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 		if err != nil {
 			log.Fatalf("Failed to open output file: %v", err)
 		}
@@ -170,54 +250,20 @@ func main() {
 		log.Fatalf("Failed to parse %s: %v", inputDesc, err)
 	}
 
-	ageIdentityFile := *ageIdentityFileFlag
-	var ageIdentity string
-	if ageIdentityFile == "" {
-		switch {
-		case *ageIdentityFlag != "":
-			ageIdentity = *ageIdentityFlag
-		case *ageIdentityCommandFlag != "":
-			key, err := runKeyCommand(ctx, *ageIdentityCommandFlag)
-			if err != nil {
-				log.Fatalf("Failed to execute age identity command: %v", err)
-			}
-			ageIdentity = key
-		case os.Getenv("SOPS_AGE_KEY_FILE") != "":
-			ageIdentityFile = os.Getenv("SOPS_AGE_KEY_FILE")
-		case os.Getenv("SOPS_AGE_KEY") != "":
-			ageIdentity = os.Getenv("SOPS_AGE_KEY")
-		default:
-			var cmdEnv, cmd string
-			for _, name := range []string{"AGE_IDENTITY_COMMAND", "AGE_IDENTITY_CMD", "SOPS_AGE_KEY_CMD"} {
-				if env := os.Getenv(name); env != "" {
-					cmdEnv, cmd = name, env
-					break
-				}
-			}
-			if cmd != "" {
-				key, err := runKeyCommand(ctx, cmd)
-				if err != nil {
-					log.Fatalf("Failed to execute %s: %v", cmdEnv, err)
-				}
-				ageIdentity = key
-			}
-		}
-	}
-
 	var (
 		outputPayload []byte
-		err           error
+		opErr         error
 	)
-	if *encrypt {
-		outputPayload, err = ageEncryptPayload(ctx, ageProgram, []string(ageRecipients), *ageRecipientsFileFlag, inputData.Payload)
-		if err != nil {
-			log.Fatalf("Failed to encrypt payload: %v", err)
+	if cfg.mode == modeEncrypt {
+		outputPayload, opErr = ageEncryptPayload(ctx, cfg.ageProgram, cfg.ageRecipients, cfg.ageRecipientsFile, inputData.Payload)
+		if opErr != nil {
+			log.Fatalf("Failed to encrypt payload: %v", opErr)
 		}
 	}
-	if *decrypt {
-		outputPayload, err = ageDecryptPayload(ctx, ageProgram, ageIdentityFile, ageIdentity, inputData.Payload)
-		if err != nil {
-			log.Fatalf("Failed to decrypt payload: %v", err)
+	if cfg.mode == modeDecrypt {
+		outputPayload, opErr = ageDecryptPayload(ctx, cfg.ageProgram, cfg.ageIdentityFile, cfg.ageIdentity, inputData.Payload)
+		if opErr != nil {
+			log.Fatalf("Failed to decrypt payload: %v", opErr)
 		}
 	}
 
