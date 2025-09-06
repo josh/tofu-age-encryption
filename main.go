@@ -37,11 +37,13 @@ func main() {
 	ctx := context.Background()
 
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	var usage bytes.Buffer
-	fs.SetOutput(&usage)
+	fs.SetOutput(io.Discard)
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stdout, "Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0])
+		origOutput := fs.Output()
+		fs.SetOutput(os.Stdout)
 		fs.PrintDefaults()
+		fs.SetOutput(origOutput)
 	}
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
 	decrypt := fs.Bool("decrypt", false, "decrypt payload")
@@ -50,7 +52,6 @@ func main() {
 	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			fmt.Fprint(os.Stdout, usage.String())
 			return
 		}
 		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
