@@ -79,6 +79,8 @@ func main() {
 	fs.Var(&ageRecipients, "age-recipient", "age recipient")
 	ageRecipientsFileFlag := fs.String("age-recipients-file", os.Getenv("AGE_RECIPIENTS_FILE"), "age recipients file")
 	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
+	ageIdentityFlag := fs.String("age-identity", "", "age identity string")
+	ageIdentityCommandFlag := fs.String("age-identity-command", "", "command whose output is the age identity")
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
 	inputFileFlag := fs.String("input-file", "", "read input from file instead of stdin")
 	outputFileFlag := fs.String("output-file", "", "write output to file instead of stdout")
@@ -170,6 +172,26 @@ func main() {
 
 	ageIdentityFile := *ageIdentityFileFlag
 	var ageIdentity string
+	if ageIdentityFile == "" && *ageIdentityFlag != "" {
+		file, cleanup, err := writeTempIdentity(*ageIdentityFlag)
+		if err != nil {
+			log.Fatalf("Failed to prepare identity: %v", err)
+		}
+		ageIdentityFile = file
+		defer cleanup()
+	}
+	if ageIdentityFile == "" && *ageIdentityCommandFlag != "" {
+		key, err := runKeyCommand(ctx, *ageIdentityCommandFlag)
+		if err != nil {
+			log.Fatalf("Failed to execute age identity command: %v", err)
+		}
+		file, cleanup, err := writeTempIdentity(key)
+		if err != nil {
+			log.Fatalf("Failed to prepare identity: %v", err)
+		}
+		ageIdentityFile = file
+		defer cleanup()
+	}
 	if ageIdentityFile == "" {
 		if env := os.Getenv("SOPS_AGE_KEY_FILE"); env != "" {
 			ageIdentityFile = env
@@ -324,4 +346,28 @@ func runKeyCommand(ctx context.Context, command string) (string, error) {
 		return "", errors.New("empty command output")
 	}
 	return key, nil
+}
+
+func writeTempIdentity(identity string) (string, func(), error) {
+	tmpfile, err := os.CreateTemp("", "age-identity-*")
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+
+	if _, err := tmpfile.WriteString(identity + "\n"); err != nil {
+		tmpfile.Close()
+		os.Remove(tmpfile.Name())
+		return "", nil, fmt.Errorf("failed to write identity to temp file: %w", err)
+	}
+
+	if err := tmpfile.Close(); err != nil {
+		os.Remove(tmpfile.Name())
+		return "", nil, fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	cleanup := func() {
+		os.Remove(tmpfile.Name())
+	}
+
+	return tmpfile.Name(), cleanup, nil
 }
