@@ -9,26 +9,23 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
 1. Provide the age recipient and identity file using either environment variables or CLI flags:
 
    Environment variables:
-
    - `AGE_IDENTITY_FILE`: path to your age identity file
    - `AGE_IDENTITY_COMMAND` (alias: `AGE_IDENTITY_CMD`): command whose output is the age identity
    - `AGE_RECIPIENT`: comma-separated list of age recipients
    - `AGE_RECIPIENTS_FILE`: path to a file with newline-separated age recipients
 
    The following `SOPS_`-prefixed variables are also supported as aliases for compatibility with tools that expect them:
-
    - `SOPS_AGE_KEY_FILE`: alias for `AGE_IDENTITY_FILE`
    - `SOPS_AGE_KEY`: age identity string
    - `SOPS_AGE_KEY_CMD`: alias for `AGE_IDENTITY_COMMAND`
    - `SOPS_AGE_RECIPIENTS`: alias for `AGE_RECIPIENT`
 
    CLI flags:
-
-    - `--age-identity-file`: path to your age identity file
-    - `--age-recipient`: may be provided multiple times or as a comma-separated list of recipients
-    - `--age-recipients-file`: path to a file with newline-separated age recipients
-    - `--input-file`: read input from file instead of stdin
-    - `--output-file`: write output to file instead of stdout
+   - `--age-identity-file`: path to your age identity file
+   - `--age-recipient`: may be provided multiple times or as a comma-separated list of recipients
+   - `--age-recipients-file`: path to a file with newline-separated age recipients
+   - `--input-file`: read input from file instead of stdin
+   - `--output-file`: write output to file instead of stdout
 
 2. Configure OpenTofu to use the external method:
 

@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"unicode"
 )
 
 // constants settable at build time.
@@ -280,7 +281,15 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile stri
 }
 
 func runKeyCommand(ctx context.Context, command string) (string, error) {
-	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	parts, err := splitCommand(command)
+	if err != nil {
+		return "", fmt.Errorf("parse command: %w", err)
+	}
+	if len(parts) == 0 {
+		return "", errors.New("empty command")
+	}
+
+	cmd := exec.CommandContext(ctx, parts[0], parts[1:]...)
 	cmd.Stderr = os.Stderr
 
 	output, err := cmd.Output()
@@ -296,6 +305,49 @@ func runKeyCommand(ctx context.Context, command string) (string, error) {
 		return "", errors.New("empty command output")
 	}
 	return key, nil
+}
+
+func splitCommand(s string) ([]string, error) {
+	var (
+		args    []string
+		current strings.Builder
+		inQuote rune
+		escaped bool
+	)
+	for _, r := range s {
+		switch {
+		case escaped:
+			current.WriteRune(r)
+			escaped = false
+		case r == '\\':
+			escaped = true
+		case r == '\'' || r == '"':
+			if inQuote == 0 {
+				inQuote = r
+			} else if inQuote == r {
+				inQuote = 0
+			} else {
+				current.WriteRune(r)
+			}
+		case unicode.IsSpace(r) && inQuote == 0:
+			if current.Len() > 0 {
+				args = append(args, current.String())
+				current.Reset()
+			}
+		default:
+			current.WriteRune(r)
+		}
+	}
+	if escaped {
+		return nil, errors.New("unterminated escape")
+	}
+	if inQuote != 0 {
+		return nil, errors.New("unterminated quote")
+	}
+	if current.Len() > 0 {
+		args = append(args, current.String())
+	}
+	return args, nil
 }
 
 func writeTempIdentity(key string) (string, func(), error) {
