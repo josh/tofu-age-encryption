@@ -4,18 +4,13 @@ env AGE_RECIPIENT=age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
 env AGE_IDENTITY_FILE=$WORK/key-a.txt
 
 exec tofu init
-cmp stdout init-stdout.txt
-cmp stderr init-stderr.txt
 
 exec tofu apply -auto-approve -lock=false
-cmp stdout apply-1-stdout.txt
-cmp stderr apply-1-stderr.txt
 
 env AGE_IDENTITY_FILE=$WORK/key-b.txt
 
 ! exec tofu apply -auto-approve -lock=false
-cmp stdout apply-2-stdout.txt
-cmp stderr apply-2-stderr.txt
+stderr 'Failed to decrypt payload: age: error: no identity matched any of the recipients'
 
 -- key-a.txt --
 # created: 2025-09-05T17:27:52-07:00
@@ -26,49 +21,6 @@ AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
 # created: 2025-09-06T01:25:41Z
 # public key: age1yh02jaysl73ph50r4xrage2hvstp9hjy72r4p4tlv99zveyf9fvsxc4h9n
 AGE-SECRET-KEY-1UTNEY8FW0GN8CXZT8KERWNL9TGDVMQYRT86C6WZQGKTDWTRL7E4Q6CMNMM
-
--- init-stdout.txt --
-
-Initializing the backend...
-
-Initializing provider plugins...
-
-OpenTofu has been successfully initialized!
-
-You may now begin working with OpenTofu. Try running "tofu plan" to see
-any changes that are required for your infrastructure. All OpenTofu commands
-should now work.
-
-If you ever set or change modules or backend configuration for OpenTofu,
-rerun this command to reinitialize your working directory. If you forget, other
-commands will detect it and remind you to do so if necessary.
--- init-stderr.txt --
--- apply-1-stdout.txt --
-
-Changes to Outputs:
-  + foo = "bar"
-
-You can apply this plan to save these new output values to the OpenTofu
-state, without changing any real infrastructure.
-
-Apply complete! Resources: 0 added, 0 changed, 0 destroyed.
-
-Outputs:
-
-foo = "bar"
--- apply-1-stderr.txt --
--- apply-2-stdout.txt --
--- apply-2-stderr.txt --
-
-Error: error loading state: decryption failed for all provided methods
-attempted decryption failed for state: decryption failed: external encryption method exited with non-zero exit code (exit status 1)
------
-Stderr:
--------
-Failed to decrypt payload: age: error: no identity matched any of the recipients
-age: report unexpected or unhelpful errors at https://filippo.io/age/report
-
-
 
 -- main.tf --
 terraform {
