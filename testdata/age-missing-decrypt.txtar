@@ -1,5 +1,5 @@
 stdin input.json
-! exec sh -c 'cmd=$(command -v tofu-age-encryption); PATH=/nonexistent "$cmd" --decrypt'
+! tofu-age-encryption --decrypt --age-path /nonexistent
 cmp stdout stdout.txt
 cmp stderr stderr.txt
 
@@ -9,4 +9,4 @@ cmp stderr stderr.txt
 -- stdout.txt --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
-Failed to decrypt payload: failed to decrypt payload with age: exec: "age": executable file not found in $PATH
+Failed to decrypt payload: failed to decrypt payload with age: fork/exec /nonexistent: no such file or directory
