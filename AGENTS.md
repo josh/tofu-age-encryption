@@ -51,6 +51,21 @@ $ go test -cover ./...
 
 The test suite uses [testscript](https://pkg.go.dev/github.com/rogpeppe/go-internal/testscript). Test files live in the `testdata` directory and contain scripts that execute commands and compare their output. These tests differ from standard Go tests because they drive the program via shell-like scripts instead of calling functions directly.
 
+### Testdata updates and CI
+
+Running the tests without the `CI` environment variable may rewrite expected results in `testdata`:
+
+```sh
+$ go test ./...
+$ git diff
+```
+
+Review the diff to understand any changes. After updating testdata, rerun the suite with the flag set to ensure it still passes in continuous integration:
+
+```sh
+$ CI=true go test ./...
+```
+
 ## Formatting
 
 Format code with:
