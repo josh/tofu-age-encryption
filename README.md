@@ -8,13 +8,13 @@ tofu-age-encryption provides an external encryption method for [OpenTofu](https:
 
    Environment variables:
 
-   - `AGE_IDENTITY_FILE`: path to your age identity file
-   - `AGE_RECIPIENT`: the corresponding age recipient
+    - `AGE_IDENTITY_FILE`: path to your age identity file
+    - `AGE_RECIPIENT`: comma-separated list of age recipients
 
    CLI flags:
 
-   - `--age-identity-file`: path to your age identity file
-   - `--age-recipient`: the corresponding age recipient
+    - `--age-identity-file`: path to your age identity file
+    - `--age-recipient`: may be provided multiple times or as a comma-separated list of recipients
 
 2. Configure OpenTofu to use the external method:
 
