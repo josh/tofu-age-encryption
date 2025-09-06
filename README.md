@@ -12,11 +12,13 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
 
     - `AGE_IDENTITY_FILE`: path to your age identity file
     - `AGE_RECIPIENT`: comma-separated list of age recipients
+    - `AGE_RECIPIENTS_FILE`: path to a file with newline-separated age recipients
 
    CLI flags:
 
     - `--age-identity-file`: path to your age identity file
     - `--age-recipient`: may be provided multiple times or as a comma-separated list of recipients
+    - `--age-recipients-file`: path to a file with newline-separated age recipients
 
 2. Configure OpenTofu to use the external method:
 
