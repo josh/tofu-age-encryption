@@ -79,6 +79,8 @@ func main() {
 	ageRecipientsFileFlag := fs.String("age-recipients-file", os.Getenv("AGE_RECIPIENTS_FILE"), "age recipients file")
 	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
+	inputFileFlag := fs.String("input-file", "", "read input from file instead of stdin")
+	outputFileFlag := fs.String("output-file", "", "write output to file instead of stdout")
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			orig := fs.Output()
@@ -115,26 +117,54 @@ func main() {
 
 	ageProgram = *ageProgramFlag
 
+	// Configure input reader.
+	in := io.Reader(os.Stdin)
+	inputDesc := "stdin"
+	if *inputFileFlag != "" {
+		f, err := os.Open(*inputFileFlag)
+		if err != nil {
+			log.Fatalf("Failed to open input file: %v", err)
+		}
+		defer f.Close()
+		in = f
+		inputDesc = "input file"
+	}
+
+	// Configure output writer.
+	out := io.Writer(os.Stdout)
+	outputDesc := "stdout"
+	if *outputFileFlag != "" {
+		f, err := os.OpenFile(*outputFileFlag, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+		if err != nil {
+			log.Fatalf("Failed to open output file: %v", err)
+		}
+		defer f.Close()
+		out = f
+		outputDesc = "output file"
+	}
+
 	header := Header{
 		"OpenTofu-External-Encryption-Method",
 		1,
 	}
-	marshalledHeader, err := json.Marshal(header)
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-	_, err = os.Stdout.Write(append(marshalledHeader, []byte("\n")...))
-	if err != nil {
-		log.Fatalf("Failed to write output: %v", err)
+	if err := json.NewEncoder(out).Encode(header); err != nil {
+		log.Fatalf("Failed to write %s: %v", outputDesc, err)
 	}
 
-	input, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		log.Fatalf("Failed to read stdin: %v", err)
-	}
+	dec := json.NewDecoder(in)
 	var inputData Input
-	if err = json.Unmarshal(input, &inputData); err != nil {
-		log.Fatalf("Failed to parse stdin: %v", err)
+	var first json.RawMessage
+	if err := dec.Decode(&first); err != nil {
+		log.Fatalf("Failed to read %s: %v", inputDesc, err)
+	}
+	var hdr Header
+	if err := json.Unmarshal(first, &hdr); err == nil && hdr.Magic == header.Magic {
+		if err := dec.Decode(&first); err != nil {
+			log.Fatalf("Failed to read %s: %v", inputDesc, err)
+		}
+	}
+	if err := json.Unmarshal(first, &inputData); err != nil {
+		log.Fatalf("Failed to parse %s: %v", inputDesc, err)
 	}
 
 	ageIdentityFile := *ageIdentityFileFlag
@@ -171,7 +201,10 @@ func main() {
 		}
 	}
 
-	var outputPayload []byte
+	var (
+		outputPayload []byte
+		err           error
+	)
 	if *encrypt {
 		outputPayload, err = ageEncryptPayload(ctx, ageProgram, []string(ageRecipients), *ageRecipientsFileFlag, inputData.Payload)
 		if err != nil {
@@ -192,9 +225,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to stringify output: %v", err)
 	}
-	_, err = os.Stdout.Write(append(outputData, []byte("\n")...))
-	if err != nil {
-		log.Fatalf("Failed to write output: %v", err)
+	if _, err = fmt.Fprintln(out, string(outputData)); err != nil {
+		log.Fatalf("Failed to write %s: %v", outputDesc, err)
 	}
 }
 

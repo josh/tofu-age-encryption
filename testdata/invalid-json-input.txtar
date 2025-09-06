@@ -8,4 +8,4 @@ cmp stderr stderr.txt
 -- stdout.txt --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
-Failed to parse stdin: unexpected end of JSON input
+Failed to read stdin: unexpected EOF
