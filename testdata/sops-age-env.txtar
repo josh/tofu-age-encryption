@@ -1,0 +1,21 @@
+env SOPS_AGE_RECIPIENTS=age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+env SOPS_AGE_KEY_FILE=$WORK/key.txt
+exec sh -c 'tofu-age-encryption --encrypt <plain.json | tail -n +2 >cipher.json'
+stdout ''
+stderr ''
+exec sh -c 'tofu-age-encryption --decrypt <cipher.json'
+cmp stdout stdout.txt
+cmp stderr stderr.txt
+
+-- plain.json --
+{"payload":"c2VjcmV0"}
+
+-- key.txt --
+# created: 2025-09-05T17:27:52-07:00
+# public key: age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
+
+-- stdout.txt --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+{"payload":"c2VjcmV0"}
+-- stderr.txt --
