@@ -172,32 +172,21 @@ func main() {
 
 	ageIdentityFile := *ageIdentityFileFlag
 	var ageIdentity string
-	if ageIdentityFile == "" && *ageIdentityFlag != "" {
-		file, cleanup, err := writeTempIdentity(*ageIdentityFlag)
-		if err != nil {
-			log.Fatalf("Failed to prepare identity: %v", err)
-		}
-		ageIdentityFile = file
-		defer cleanup()
-	}
-	if ageIdentityFile == "" && *ageIdentityCommandFlag != "" {
-		key, err := runKeyCommand(ctx, *ageIdentityCommandFlag)
-		if err != nil {
-			log.Fatalf("Failed to execute age identity command: %v", err)
-		}
-		file, cleanup, err := writeTempIdentity(key)
-		if err != nil {
-			log.Fatalf("Failed to prepare identity: %v", err)
-		}
-		ageIdentityFile = file
-		defer cleanup()
-	}
 	if ageIdentityFile == "" {
-		if env := os.Getenv("SOPS_AGE_KEY_FILE"); env != "" {
-			ageIdentityFile = env
-		} else if env := os.Getenv("SOPS_AGE_KEY"); env != "" {
-			ageIdentity = env
-		} else {
+		switch {
+		case *ageIdentityFlag != "":
+			ageIdentity = *ageIdentityFlag
+		case *ageIdentityCommandFlag != "":
+			key, err := runKeyCommand(ctx, *ageIdentityCommandFlag)
+			if err != nil {
+				log.Fatalf("Failed to execute age identity command: %v", err)
+			}
+			ageIdentity = key
+		case os.Getenv("SOPS_AGE_KEY_FILE") != "":
+			ageIdentityFile = os.Getenv("SOPS_AGE_KEY_FILE")
+		case os.Getenv("SOPS_AGE_KEY") != "":
+			ageIdentity = os.Getenv("SOPS_AGE_KEY")
+		default:
 			var cmdEnv, cmd string
 			for _, name := range []string{"AGE_IDENTITY_COMMAND", "AGE_IDENTITY_CMD", "SOPS_AGE_KEY_CMD"} {
 				if env := os.Getenv(name); env != "" {
@@ -280,30 +269,41 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, ide
 		return nil, errors.New("no identity specified")
 	}
 	args := []string{"--decrypt"}
-	var extra []*os.File
+	var (
+		extra   []*os.File
+		cleanup func()
+	)
 	if identityFile != "" {
 		args = append(args, "--identity", identityFile)
 	} else if identity != "" {
 		if runtime.GOOS == "windows" {
-			return nil, errors.New("identity pipes not supported on Windows; use --age-identity-file")
+			var err error
+			identityFile, cleanup, err = writeTempIdentity(identity)
+			if err != nil {
+				return nil, fmt.Errorf("write identity to temp file: %w", err)
+			}
+			fmt.Fprintln(os.Stderr, "warning: writing age identity to a temporary file on Windows")
+			args = append(args, "--identity", identityFile)
+			defer cleanup()
+		} else {
+			r, w, err := os.Pipe()
+			if err != nil {
+				return nil, fmt.Errorf("pipe identity: %w", err)
+			}
+			if _, err := io.WriteString(w, identity+"\n"); err != nil {
+				_ = w.Close()
+				_ = r.Close()
+				return nil, fmt.Errorf("write identity: %w", err)
+			}
+			if err := w.Close(); err != nil {
+				_ = r.Close()
+				return nil, fmt.Errorf("write identity: %w", err)
+			}
+			extra = append(extra, r)
+			fd := 3 + len(extra) - 1
+			args = append(args, "--identity", fmt.Sprintf("/dev/fd/%d", fd)) // works on Linux and macOS
+			defer r.Close()
 		}
-		r, w, err := os.Pipe()
-		if err != nil {
-			return nil, fmt.Errorf("pipe identity: %w", err)
-		}
-		if _, err := io.WriteString(w, identity+"\n"); err != nil {
-			_ = w.Close()
-			_ = r.Close()
-			return nil, fmt.Errorf("write identity: %w", err)
-		}
-		if err := w.Close(); err != nil {
-			_ = r.Close()
-			return nil, fmt.Errorf("write identity: %w", err)
-		}
-		extra = append(extra, r)
-		fd := 3 + len(extra) - 1
-		args = append(args, "--identity", fmt.Sprintf("/dev/fd/%d", fd)) // works on Linux and macOS
-		defer r.Close()
 	}
 
 	cmd := exec.CommandContext(ctx, ageProgram, args...)
