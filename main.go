@@ -44,7 +44,7 @@ const (
 	modeDecrypt
 )
 
-type config struct {
+type Config struct {
 	mode            mode
 	ageRecipients   []string
 	ageIdentityFile string
@@ -69,7 +69,7 @@ func (s *sliceFlag) Set(value string) error {
 	return nil
 }
 
-func parseConfig(ctx context.Context, args []string) (config, error) {
+func parseConfig(ctx context.Context, args []string) (Config, error) {
 	ageProgram := AgeProgram
 	if ageProgram == "" || ageProgram == "age" {
 		if path, err := exec.LookPath("age"); err == nil {
@@ -106,9 +106,9 @@ func parseConfig(ctx context.Context, args []string) (config, error) {
 			fs.SetOutput(os.Stdout)
 			fs.Usage()
 			fs.SetOutput(orig)
-			return config{}, flag.ErrHelp
+			return Config{}, flag.ErrHelp
 		}
-		return config{}, err
+		return Config{}, err
 	}
 
 	if len(ageRecipients) == 0 {
@@ -122,12 +122,12 @@ func parseConfig(ctx context.Context, args []string) (config, error) {
 	if *ageRecipientsFileFlag != "" {
 		rs, err := parseRecipientsFile(*ageRecipientsFileFlag)
 		if err != nil {
-			return config{}, fmt.Errorf("read age recipients file: %w", err)
+			return Config{}, fmt.Errorf("read age recipients file: %w", err)
 		}
 		ageRecipients = append(ageRecipients, rs...)
 	}
 
-	cfg := config{
+	cfg := Config{
 		ageRecipients: []string(ageRecipients),
 		ageProgram:    *ageProgramFlag,
 		inputFile:     *inputFileFlag,
@@ -140,7 +140,7 @@ func parseConfig(ctx context.Context, args []string) (config, error) {
 	}
 
 	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {
-		return config{}, fmt.Errorf("expected --encrypt or --decrypt")
+		return Config{}, fmt.Errorf("expected --encrypt or --decrypt")
 	}
 	if *encrypt {
 		cfg.mode = modeEncrypt
@@ -157,7 +157,7 @@ func parseConfig(ctx context.Context, args []string) (config, error) {
 		case *ageIdentityCommandFlag != "":
 			key, err := runKeyCommand(ctx, *ageIdentityCommandFlag)
 			if err != nil {
-				return config{}, fmt.Errorf("failed to execute age identity command: %w", err)
+				return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
 			}
 			ageIdentity = key
 		case os.Getenv("SOPS_AGE_KEY_FILE") != "":
@@ -175,7 +175,7 @@ func parseConfig(ctx context.Context, args []string) (config, error) {
 			if cmd != "" {
 				key, err := runKeyCommand(ctx, cmd)
 				if err != nil {
-					return config{}, fmt.Errorf("failed to execute %s: %w", cmdEnv, err)
+					return Config{}, fmt.Errorf("failed to execute %s: %w", cmdEnv, err)
 				}
 				ageIdentity = key
 			}
@@ -266,13 +266,13 @@ func main() {
 		opErr         error
 	)
 	if cfg.mode == modeEncrypt {
-		outputPayload, opErr = ageEncryptPayload(ctx, cfg.ageProgram, cfg.ageRecipients, inputData.Payload)
+		outputPayload, opErr = ageEncryptPayload(ctx, &cfg, inputData.Payload)
 		if opErr != nil {
 			log.Fatalf("Failed to encrypt payload: %v", opErr)
 		}
 	}
 	if cfg.mode == modeDecrypt {
-		outputPayload, opErr = ageDecryptPayload(ctx, cfg.ageProgram, cfg.ageIdentityFile, cfg.ageIdentity, inputData.Payload)
+		outputPayload, opErr = ageDecryptPayload(ctx, &cfg, inputData.Payload)
 		if opErr != nil {
 			log.Fatalf("Failed to decrypt payload: %v", opErr)
 		}
@@ -290,15 +290,15 @@ func main() {
 	}
 }
 
-func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string, payload []byte) ([]byte, error) {
-	if len(pubkeys) == 0 {
+func ageEncryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte, error) {
+	if len(cfg.ageRecipients) == 0 {
 		return nil, errors.New("no recipients specified")
 	}
 	args := []string{"--encrypt"}
-	for _, r := range pubkeys {
+	for _, r := range cfg.ageRecipients {
 		args = append(args, "--recipient", r)
 	}
-	cmd := exec.CommandContext(ctx, ageProgram, args...)
+	cmd := exec.CommandContext(ctx, cfg.ageProgram, args...)
 	cmd.Stdin = bytes.NewReader(payload)
 
 	out, err := cmd.Output()
@@ -318,8 +318,8 @@ func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string,
 	return out, nil
 }
 
-func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, identity string, payload []byte) ([]byte, error) {
-	if identityFile == "" && identity == "" {
+func ageDecryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte, error) {
+	if cfg.ageIdentityFile == "" && cfg.ageIdentity == "" {
 		return nil, errors.New("no identity specified")
 	}
 	args := []string{"--decrypt"}
@@ -327,24 +327,24 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, ide
 		extra   []*os.File
 		cleanup func()
 	)
-	if identityFile != "" {
-		args = append(args, "--identity", identityFile)
-	} else if identity != "" {
+	if cfg.ageIdentityFile != "" {
+		args = append(args, "--identity", cfg.ageIdentityFile)
+	} else if cfg.ageIdentity != "" {
 		if runtime.GOOS == "windows" {
 			var err error
-			identityFile, cleanup, err = writeTempIdentity(identity)
+			cfg.ageIdentityFile, cleanup, err = writeTempIdentity(cfg.ageIdentity)
 			if err != nil {
 				return nil, fmt.Errorf("write identity to temp file: %w", err)
 			}
 			fmt.Fprintln(os.Stderr, "warning: writing age identity to a temporary file on Windows")
-			args = append(args, "--identity", identityFile)
+			args = append(args, "--identity", cfg.ageIdentityFile)
 			defer cleanup()
 		} else {
 			r, w, err := os.Pipe()
 			if err != nil {
 				return nil, fmt.Errorf("pipe identity: %w", err)
 			}
-			if _, err := io.WriteString(w, identity+"\n"); err != nil {
+			if _, err := io.WriteString(w, cfg.ageIdentity+"\n"); err != nil {
 				_ = w.Close()
 				_ = r.Close()
 				return nil, fmt.Errorf("write identity: %w", err)
@@ -362,7 +362,7 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, ide
 		}
 	}
 
-	cmd := exec.CommandContext(ctx, ageProgram, args...)
+	cmd := exec.CommandContext(ctx, cfg.ageProgram, args...)
 	if len(extra) > 0 {
 		cmd.ExtraFiles = append(cmd.ExtraFiles, extra...)
 	}
