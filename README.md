@@ -26,6 +26,8 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
     - `--age-identity-file`: path to your age identity file
     - `--age-recipient`: may be provided multiple times or as a comma-separated list of recipients
     - `--age-recipients-file`: path to a file with newline-separated age recipients
+    - `--input-file`: read input from file instead of stdin
+    - `--output-file`: write output to file instead of stdout
 
 2. Configure OpenTofu to use the external method:
 
