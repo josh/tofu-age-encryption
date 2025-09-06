@@ -142,37 +142,23 @@ func main() {
 		if env := os.Getenv("SOPS_AGE_KEY_FILE"); env != "" {
 			ageIdentityFile = env
 		} else if env := os.Getenv("SOPS_AGE_KEY"); env != "" {
-			f, err := os.CreateTemp("", "age-identity-*")
+			file, cleanup, err := writeTempIdentity(env)
 			if err != nil {
-				log.Fatalf("Failed to create temp identity file: %v", err)
+				log.Fatalf("Failed to prepare identity: %v", err)
 			}
-			if _, err := f.WriteString(env + "\n"); err != nil {
-				_ = f.Close()
-				log.Fatalf("Failed to write identity: %v", err)
-			}
-			if err := f.Close(); err != nil {
-				log.Fatalf("Failed to close identity file: %v", err)
-			}
-			ageIdentityFile = f.Name()
-			defer os.Remove(f.Name())
+			ageIdentityFile = file
+			defer cleanup()
 		} else if env := os.Getenv("SOPS_AGE_KEY_CMD"); env != "" {
 			key, err := runKeyCommand(ctx, env)
 			if err != nil {
 				log.Fatalf("Failed to execute SOPS_AGE_KEY_CMD: %v", err)
 			}
-			f, err := os.CreateTemp("", "age-identity-*")
+			file, cleanup, err := writeTempIdentity(key)
 			if err != nil {
-				log.Fatalf("Failed to create temp identity file: %v", err)
+				log.Fatalf("Failed to prepare identity: %v", err)
 			}
-			if _, err := f.WriteString(key + "\n"); err != nil {
-				_ = f.Close()
-				log.Fatalf("Failed to write identity: %v", err)
-			}
-			if err := f.Close(); err != nil {
-				log.Fatalf("Failed to close identity file: %v", err)
-			}
-			ageIdentityFile = f.Name()
-			defer os.Remove(f.Name())
+			ageIdentityFile = file
+			defer cleanup()
 		}
 	}
 
@@ -216,7 +202,7 @@ func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string,
 
 	out, err := cmd.Output()
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return nil, fmt.Errorf("timeout exceeded while encrypting payload with age")
 		}
 
@@ -237,7 +223,7 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile stri
 
 	out, err := cmd.Output()
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return nil, fmt.Errorf("timeout exceeded while decrypting payload with age")
 		}
 
@@ -258,7 +244,7 @@ func runKeyCommand(ctx context.Context, command string) (string, error) {
 
 	output, err := cmd.Output()
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return "", fmt.Errorf("timeout exceeded while executing command")
 		}
 		return "", fmt.Errorf("failed to execute command: %w", err)
@@ -269,4 +255,22 @@ func runKeyCommand(ctx context.Context, command string) (string, error) {
 		return "", errors.New("empty command output")
 	}
 	return key, nil
+}
+
+func writeTempIdentity(key string) (string, func(), error) {
+	f, err := os.CreateTemp("", "age-identity-*")
+	if err != nil {
+		return "", nil, fmt.Errorf("create temp identity file: %w", err)
+	}
+	if _, err := f.WriteString(key + "\n"); err != nil {
+		_ = f.Close()
+		_ = os.Remove(f.Name())
+		return "", nil, fmt.Errorf("write identity: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(f.Name())
+		return "", nil, fmt.Errorf("close identity file: %w", err)
+	}
+	cleanup := func() { _ = os.Remove(f.Name()) }
+	return f.Name(), cleanup, nil
 }
