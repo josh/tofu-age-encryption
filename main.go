@@ -41,6 +41,7 @@ func main() {
 	}
 
 	log.Default().SetOutput(os.Stderr)
+	log.Default().SetFlags(0) // suppress timestamps for deterministic output
 
 	if len(os.Args) != 2 {
 		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
