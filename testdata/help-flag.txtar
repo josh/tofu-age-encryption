@@ -4,6 +4,10 @@ cmp stdout help.txt
 
 -- help.txt --
 Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
+  -age-identity string
+    	age identity string
+  -age-identity-command string
+    	command whose output is the age identity
   -age-identity-file string
     	age identity file
   -age-path string
