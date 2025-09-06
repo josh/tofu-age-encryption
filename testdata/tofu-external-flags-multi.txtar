@@ -4,13 +4,11 @@ env TF_CLI_ARGS=-no-color
 exec tofu init
 
 exec tofu apply -auto-approve -lock=false
-exec python -m json.tool terraform.tfstate
 exec cat terraform.tfstate
 ! stdout foo
 ! stdout bar
 
 exec tofu apply -auto-approve -lock=false
-exec python -m json.tool terraform.tfstate
 exec cat terraform.tfstate
 ! stdout foo
 ! stdout bar
