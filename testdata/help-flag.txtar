@@ -1,0 +1,16 @@
+exec tofu-age-encryption --help
+cmp stdout stdout.txt
+! stderr .
+
+-- stdout.txt --
+Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
+  -age-identity-file string
+    	age identity file
+  -age-recipient string
+    	age recipient
+  -decrypt
+    	decrypt payload
+  -encrypt
+    	encrypt payload
+  -version
+    	print version
