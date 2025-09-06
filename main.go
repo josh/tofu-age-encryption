@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -33,6 +35,23 @@ type Output struct {
 	Payload []byte `json:"payload"`
 }
 
+type KeyProviderHeader struct {
+	Magic   string `json:"magic"`
+	Version int    `json:"version"`
+}
+
+type Metadata struct {
+	ExternalData map[string]any `json:"external_data"`
+}
+
+type KeyProviderOutput struct {
+	Keys struct {
+		EncryptionKey []byte `json:"encryption_key,omitempty"`
+		DecryptionKey []byte `json:"decryption_key,omitempty"`
+	} `json:"keys"`
+	Meta Metadata `json:"meta,omitempty"`
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -40,6 +59,7 @@ func main() {
 	fs.SetOutput(io.Discard)
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
 	decrypt := fs.Bool("decrypt", false, "decrypt payload")
+	keyProvider := fs.Bool("key-provider", false, "provide encryption keys")
 	versionFlag := fs.Bool("version", false, "print version")
 	ageRecipientFlag := fs.String("age-recipient", os.Getenv("AGE_RECIPIENT"), "age recipient")
 	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
@@ -56,8 +76,8 @@ func main() {
 	log.Default().SetOutput(os.Stderr)
 	log.Default().SetFlags(0) // suppress timestamps for deterministic output
 
-	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {
-		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt\n")
+	if (*encrypt && *decrypt) || (*encrypt && *keyProvider) || (*decrypt && *keyProvider) || (!*encrypt && !*decrypt && !*keyProvider) {
+		fmt.Fprintf(os.Stderr, "usage: expected --encrypt or --decrypt or --key-provider\n")
 		os.Exit(1)
 	}
 
@@ -66,6 +86,11 @@ func main() {
 		if path, err := exec.LookPath("age"); err == nil {
 			ageProgram = path
 		}
+	}
+
+	if *keyProvider {
+		handleKeyProvider(ctx, ageProgram, *ageRecipientFlag, *ageIdentityFileFlag)
+		return
 	}
 
 	header := Header{
@@ -160,4 +185,77 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile stri
 	}
 
 	return out, nil
+}
+
+func handleKeyProvider(ctx context.Context, ageProgram, ageRecipient, ageIdentityFile string) {
+	header := KeyProviderHeader{
+		"OpenTofu-External-Key-Provider",
+		1,
+	}
+	marshalledHeader, err := json.Marshal(header)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	_, err = os.Stdout.Write(append(marshalledHeader, []byte("\n")...))
+	if err != nil {
+		log.Fatalf("Failed to write output: %v", err)
+	}
+
+	input, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		log.Fatalf("Failed to read stdin: %v", err)
+	}
+	var inMeta *Metadata
+	if len(bytes.TrimSpace(input)) > 0 {
+		if err := json.Unmarshal(input, &inMeta); err != nil {
+			log.Fatalf("Failed to parse stdin: %v", err)
+		}
+	}
+
+	var output KeyProviderOutput
+	if inMeta == nil || len(inMeta.ExternalData) == 0 {
+		if ageRecipient == "" {
+			log.Fatalf("age recipient is required")
+		}
+		key := make([]byte, 32)
+		if _, err := rand.Read(key); err != nil {
+			log.Fatalf("Failed to generate encryption key: %v", err)
+		}
+		encryptedKey, err := ageEncryptPayload(ctx, ageProgram, ageRecipient, key)
+		if err != nil {
+			log.Fatalf("Failed to encrypt key: %v", err)
+		}
+		output.Keys.EncryptionKey = key
+		output.Meta = Metadata{ExternalData: map[string]any{
+			"age_encrypted_key": base64.StdEncoding.EncodeToString(encryptedKey),
+		}}
+	} else {
+		if ageIdentityFile == "" {
+			log.Fatalf("age identity file is required")
+		}
+		encKeyStr, ok := inMeta.ExternalData["age_encrypted_key"].(string)
+		if !ok {
+			log.Fatalf("metadata missing age_encrypted_key")
+		}
+		encKey, err := base64.StdEncoding.DecodeString(encKeyStr)
+		if err != nil {
+			log.Fatalf("Failed to decode encrypted key: %v", err)
+		}
+		key, err := ageDecryptPayload(ctx, ageProgram, ageIdentityFile, encKey)
+		if err != nil {
+			log.Fatalf("Failed to decrypt key: %v", err)
+		}
+		output.Keys.EncryptionKey = key
+		output.Keys.DecryptionKey = key
+		output.Meta = *inMeta
+	}
+
+	outputData, err := json.Marshal(output)
+	if err != nil {
+		log.Fatalf("Failed to encode output: %v", err)
+	}
+	_, err = os.Stdout.Write(outputData)
+	if err != nil {
+		log.Fatalf("Failed to write output: %v", err)
+	}
 }

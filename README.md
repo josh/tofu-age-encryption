@@ -1,6 +1,6 @@
 # tofu-age-encryption
 
-tofu-age-encryption provides an external encryption method for [OpenTofu](https://opentofu.org/) using [age](https://age-encryption.org/).
+tofu-age-encryption provides an external encryption method and key provider for [OpenTofu](https://opentofu.org/) using [age](https://age-encryption.org/).
 
 OpenTofu encrypts state with a symmetric key derived from a shared passphrase that every operator must share and rotate together. This project replaces that workflow with age's asymmetric key pairs so operators can keep private keys, specify their own recipients, and rotate access without redistributing a secret.
 
@@ -52,4 +52,34 @@ output "pet" {
 ```sh
 $ tofu init
 $ tofu apply
+```
+
+## External key provider
+
+`tofu-age-encryption` can also act as an external key provider. This allows you to use built-in encryption methods like `aes_gcm` while storing the encryption key encrypted for your age recipients.
+
+Configure OpenTofu to use the key provider:
+
+```hcl
+terraform {
+  encryption {
+    key_provider "external" "age" {
+      command = ["tofu-age-encryption", "--key-provider"]
+    }
+
+    method "aes_gcm" "example" {
+      keys = key_provider.external.age
+    }
+
+    state {
+      method = method.aes_gcm.example
+      enforced = true
+    }
+
+    plan {
+      method = method.aes_gcm.example
+      enforced = true
+    }
+  }
+}
 ```
