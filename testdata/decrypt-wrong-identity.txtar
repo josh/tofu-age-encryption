@@ -1,0 +1,18 @@
+env AGE_IDENTITY_FILE=key-b.txt
+! exec sh -c 'tofu-age-encryption --decrypt <cipher.json'
+cmp stdout stdout.json
+cmp stderr stderr.txt
+
+-- cipher.json --
+{"payload":"YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmRnBqV1pZWDV3WHhQOXRjL3JLN2ZxdnBvTW02THdLOXIvVFVKa2s2S1Y0CkFjV1RZK3BYM01zaDBLbkIrK0tHczhJVVRvU3ZJY1ROV0JvNDNDaE9OVDQKLS0tIENqRjlzUzNSY2pta1JkeEFmR1pYTGpNMmREbk1SSEtTVS9mSHEwQWZSZVUK01JDFoTH0Yl/s/VJqNKy7Tyo7xMYwJHZWswI3ANcF3LoPaUQAU8="}
+
+-- key-b.txt --
+# created: 2025-09-06T01:25:41Z
+# public key: age1yh02jaysl73ph50r4xrage2hvstp9hjy72r4p4tlv99zveyf9fvsxc4h9n
+AGE-SECRET-KEY-1UTNEY8FW0GN8CXZT8KERWNL9TGDVMQYRT86C6WZQGKTDWTRL7E4Q6CMNMM
+
+-- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+-- stderr.txt --
+Failed to decrypt payload: age: error: no identity matched any of the recipients
+age: report unexpected or unhelpful errors at https://filippo.io/age/report
