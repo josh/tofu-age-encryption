@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -223,6 +224,9 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, ide
 	if identityFile != "" {
 		args = append(args, "--identity", identityFile)
 	} else if identity != "" {
+		if runtime.GOOS == "windows" {
+			return nil, errors.New("identity pipes not supported on Windows; use --age-identity-file")
+		}
 		r, w, err := os.Pipe()
 		if err != nil {
 			return nil, fmt.Errorf("pipe identity: %w", err)
