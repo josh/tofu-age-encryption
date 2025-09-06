@@ -111,11 +111,14 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		return Config{}, err
 	}
 
-	if len(ageRecipients) == 0 {
-		if env := os.Getenv("AGE_RECIPIENT"); env != "" {
-			_ = ageRecipients.Set(env)
-		} else if env := os.Getenv("SOPS_AGE_RECIPIENTS"); env != "" {
-			_ = ageRecipients.Set(env)
+	var recipients []string
+	recipients = append(recipients, ageRecipients...)
+
+	for _, envVar := range []string{"AGE_RECIPIENT", "SOPS_AGE_RECIPIENTS"} {
+		if val := os.Getenv(envVar); val != "" {
+			var tmp sliceFlag
+			_ = tmp.Set(val)
+			recipients = append(recipients, tmp...)
 		}
 	}
 
@@ -124,11 +127,22 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		if err != nil {
 			return Config{}, fmt.Errorf("read age recipients file: %w", err)
 		}
-		ageRecipients = append(ageRecipients, rs...)
+		recipients = append(recipients, rs...)
+	}
+
+	// Deduplicate recipients.
+	seen := make(map[string]struct{})
+	deduped := make([]string, 0, len(recipients))
+	for _, r := range recipients {
+		if _, ok := seen[r]; ok {
+			continue
+		}
+		seen[r] = struct{}{}
+		deduped = append(deduped, r)
 	}
 
 	cfg := Config{
-		ageRecipients: []string(ageRecipients),
+		ageRecipients: deduped,
 		ageProgram:    *ageProgramFlag,
 		inputFile:     *inputFileFlag,
 		outputFile:    *outputFileFlag,

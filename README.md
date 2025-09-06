@@ -18,7 +18,7 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
    - `SOPS_AGE_KEY_FILE`: alias for `AGE_IDENTITY_FILE`
    - `SOPS_AGE_KEY`: age identity string
    - `SOPS_AGE_KEY_CMD`: alias for `AGE_IDENTITY_COMMAND`
-   - `SOPS_AGE_RECIPIENTS`: alias for `AGE_RECIPIENT`
+   - `SOPS_AGE_RECIPIENTS`: alias for `AGE_RECIPIENT` (values from both variables are merged; duplicates are ignored)
 
    CLI flags:
    - `--age-identity-file`: path to your age identity file
