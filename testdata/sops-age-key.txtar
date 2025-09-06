@@ -1,0 +1,12 @@
+env SOPS_AGE_KEY=AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
+exec sh -c 'tofu-age-encryption --decrypt <cipher.json'
+cmp stdout stdout.txt
+cmp stderr stderr.txt
+
+-- cipher.json --
+{"payload":"YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBmRnBqV1pZWDV3WHhQOXRjL3JLN2ZxdnBvTW02THdLOXIvVFVKa2s2S1Y0CkFjV1RZK3BYM01zaDBLbkIrK0tHczhJVVRvU3ZJY1ROV0JvNDNDaE9OVDQKLS0tIENqRjlzUzNSY2pta1JkeEFmR1pYTGpNMmREbk1SSEtTVS9mSHEwQWZSZVUK01JDFoTH0Yl/s/VJqNKy7Tyo7xMYwJHZWswI3ANcF3LoPaUQAU8="}
+
+-- stdout.txt --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+{"payload":"c2VjcmV0"}
+-- stderr.txt --

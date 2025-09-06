@@ -95,6 +95,8 @@ func main() {
 		if env := os.Getenv("AGE_RECIPIENT"); env != "" {
 			// Fall back to comma-separated AGE_RECIPIENT when no flags are provided.
 			_ = ageRecipients.Set(env)
+		} else if env := os.Getenv("SOPS_AGE_RECIPIENTS"); env != "" {
+			_ = ageRecipients.Set(env)
 		}
 	}
 
@@ -136,6 +138,43 @@ func main() {
 	}
 
 	ageIdentityFile := *ageIdentityFileFlag
+	if ageIdentityFile == "" {
+		if env := os.Getenv("SOPS_AGE_KEY_FILE"); env != "" {
+			ageIdentityFile = env
+		} else if env := os.Getenv("SOPS_AGE_KEY"); env != "" {
+			f, err := os.CreateTemp("", "age-identity-*")
+			if err != nil {
+				log.Fatalf("Failed to create temp identity file: %v", err)
+			}
+			if _, err := f.WriteString(env + "\n"); err != nil {
+				_ = f.Close()
+				log.Fatalf("Failed to write identity: %v", err)
+			}
+			if err := f.Close(); err != nil {
+				log.Fatalf("Failed to close identity file: %v", err)
+			}
+			ageIdentityFile = f.Name()
+			defer os.Remove(f.Name())
+		} else if env := os.Getenv("SOPS_AGE_KEY_CMD"); env != "" {
+			key, err := runKeyCommand(ctx, env)
+			if err != nil {
+				log.Fatalf("Failed to execute SOPS_AGE_KEY_CMD: %v", err)
+			}
+			f, err := os.CreateTemp("", "age-identity-*")
+			if err != nil {
+				log.Fatalf("Failed to create temp identity file: %v", err)
+			}
+			if _, err := f.WriteString(key + "\n"); err != nil {
+				_ = f.Close()
+				log.Fatalf("Failed to write identity: %v", err)
+			}
+			if err := f.Close(); err != nil {
+				log.Fatalf("Failed to close identity file: %v", err)
+			}
+			ageIdentityFile = f.Name()
+			defer os.Remove(f.Name())
+		}
+	}
 
 	var outputPayload []byte
 	if *encrypt {
@@ -211,4 +250,23 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile stri
 	}
 
 	return out, nil
+}
+
+func runKeyCommand(ctx context.Context, command string) (string, error) {
+	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("timeout exceeded while executing command")
+		}
+		return "", fmt.Errorf("failed to execute command: %w", err)
+	}
+
+	key := strings.TrimSpace(string(output))
+	if key == "" {
+		return "", errors.New("empty command output")
+	}
+	return key, nil
 }
