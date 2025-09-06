@@ -2,6 +2,8 @@
 
 tofu-age-encryption provides an external encryption method for [OpenTofu](https://opentofu.org/) using [age](https://age-encryption.org/).
 
+OpenTofu encrypts state with a symmetric key derived from a shared passphrase that every operator must share and rotate together. This project replaces that workflow with age's asymmetric key pairs so operators can keep private keys, specify their own recipients, and rotate access without redistributing a secret.
+
 ## Usage
 
 1. Provide the age recipient and identity file using either environment variables or CLI flags:
