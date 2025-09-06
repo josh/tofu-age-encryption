@@ -7,8 +7,16 @@ env AGE_IDENTITY_FILE=$WORK/key.txt
 exec tofu init
 
 exec tofu apply -auto-approve -lock=false
+exec python -m json.tool terraform.tfstate
+exec cat terraform.tfstate
+! stdout foo
+! stdout bar
 
 exec tofu apply -auto-approve -lock=false
+exec python -m json.tool terraform.tfstate
+exec cat terraform.tfstate
+! stdout foo
+! stdout bar
 
 -- key.txt --
 # created: 2025-09-05T17:27:52-07:00
