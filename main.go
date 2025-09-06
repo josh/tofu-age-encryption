@@ -208,7 +208,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to open input file: %v", err)
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 		in = f
 		inputDesc = "input file"
 	}
@@ -221,7 +223,9 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to open output file: %v", err)
 		}
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 		out = f
 		outputDesc = "output file"
 	}
@@ -348,7 +352,9 @@ func ageDecryptPayload(ctx context.Context, ageProgram string, identityFile, ide
 			extra = append(extra, r)
 			fd := 3 + len(extra) - 1
 			args = append(args, "--identity", fmt.Sprintf("/dev/fd/%d", fd)) // works on Linux and macOS
-			defer r.Close()
+			defer func() {
+				_ = r.Close()
+			}()
 		}
 	}
 
@@ -401,18 +407,18 @@ func writeTempIdentity(identity string) (string, func(), error) {
 	}
 
 	if _, err := tmpfile.WriteString(identity + "\n"); err != nil {
-		tmpfile.Close()
-		os.Remove(tmpfile.Name())
+		_ = tmpfile.Close()
+		_ = os.Remove(tmpfile.Name())
 		return "", nil, fmt.Errorf("failed to write identity to temp file: %w", err)
 	}
 
 	if err := tmpfile.Close(); err != nil {
-		os.Remove(tmpfile.Name())
+		_ = os.Remove(tmpfile.Name())
 		return "", nil, fmt.Errorf("failed to close temp file: %w", err)
 	}
 
 	cleanup := func() {
-		os.Remove(tmpfile.Name())
+		_ = os.Remove(tmpfile.Name())
 	}
 
 	return tmpfile.Name(), cleanup, nil
