@@ -63,7 +63,9 @@ func main() {
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0])
+		if _, err := fmt.Fprintf(fs.Output(), "Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0]); err != nil {
+			log.Printf("Failed to print usage: %v", err)
+		}
 		fs.PrintDefaults()
 	}
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
