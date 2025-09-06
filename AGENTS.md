@@ -48,6 +48,14 @@ Format code with:
 $ go fmt ./...
 ```
 
+## Coding Style
+
+Format Markdown files with:
+
+```sh
+$ prettier --write *.md
+```
+
 ## Code Quality
 
 Run vet and static analysis tools before committing:
