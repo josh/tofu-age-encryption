@@ -63,7 +63,12 @@ func main() {
 	fs := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0])
+		msg := fmt.Sprintf("Usage: %s [--encrypt | --decrypt] [options]\n", os.Args[0])
+		if _, err := fmt.Fprint(fs.Output(), msg); err != nil {
+			if _, err = fmt.Fprint(os.Stderr, msg); err != nil {
+				panic(err)
+			}
+		}
 		fs.PrintDefaults()
 	}
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
@@ -71,6 +76,7 @@ func main() {
 	versionFlag := fs.Bool("version", false, "print version")
 	var ageRecipients sliceFlag
 	fs.Var(&ageRecipients, "age-recipient", "age recipient")
+	ageRecipientsFileFlag := fs.String("age-recipients-file", os.Getenv("AGE_RECIPIENTS_FILE"), "age recipients file")
 	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
 	if err := fs.Parse(os.Args[1:]); err != nil {
@@ -133,7 +139,7 @@ func main() {
 
 	var outputPayload []byte
 	if *encrypt {
-		outputPayload, err = ageEncryptPayload(ctx, ageProgram, []string(ageRecipients), inputData.Payload)
+		outputPayload, err = ageEncryptPayload(ctx, ageProgram, []string(ageRecipients), *ageRecipientsFileFlag, inputData.Payload)
 		if err != nil {
 			log.Fatalf("Failed to encrypt payload: %v", err)
 		}
@@ -158,8 +164,11 @@ func main() {
 	}
 }
 
-func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string, payload []byte) ([]byte, error) {
+func ageEncryptPayload(ctx context.Context, ageProgram string, pubkeys []string, recipientsFile string, payload []byte) ([]byte, error) {
 	args := []string{"--encrypt"}
+	if recipientsFile != "" {
+		args = append(args, "--recipients-file", recipientsFile)
+	}
 	for _, r := range pubkeys {
 		args = append(args, "--recipient", r)
 	}

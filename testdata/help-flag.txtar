@@ -10,6 +10,8 @@ Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
     	path to age binary (default "/usr/bin/age")
   -age-recipient value
     	age recipient
+  -age-recipients-file string
+    	age recipients file
   -decrypt
     	decrypt payload
   -encrypt
