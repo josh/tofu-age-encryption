@@ -20,9 +20,5 @@ Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
     	decrypt payload
   -encrypt
     	encrypt payload
-  -input-file string
-    	read input from file instead of stdin
-  -output-file string
-    	write output to file instead of stdout
   -version
     	print version

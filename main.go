@@ -50,8 +50,6 @@ type Config struct {
 	ageIdentityFile string
 	ageIdentity     string
 	ageProgram      string
-	inputFile       string
-	outputFile      string
 	version         bool
 }
 
@@ -98,8 +96,6 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	ageIdentityFlag := fs.String("age-identity", "", "age identity string")
 	ageIdentityCommandFlag := fs.String("age-identity-command", "", "command whose output is the age identity")
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
-	inputFileFlag := fs.String("input-file", "", "read input from file instead of stdin")
-	outputFileFlag := fs.String("output-file", "", "write output to file instead of stdout")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			orig := fs.Output()
@@ -144,8 +140,6 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	cfg := Config{
 		ageRecipients: deduped,
 		ageProgram:    *ageProgramFlag,
-		inputFile:     *inputFileFlag,
-		outputFile:    *outputFileFlag,
 		version:       *versionFlag,
 	}
 
@@ -221,35 +215,11 @@ func main() {
 	log.Default().SetOutput(os.Stderr)
 	log.Default().SetFlags(0) // suppress timestamps for deterministic output
 
-	// Configure input reader.
 	in := io.Reader(os.Stdin)
 	inputDesc := "stdin"
-	if cfg.inputFile != "" {
-		f, err := os.Open(cfg.inputFile)
-		if err != nil {
-			log.Fatalf("Failed to open input file: %v", err)
-		}
-		defer func() {
-			_ = f.Close()
-		}()
-		in = f
-		inputDesc = "input file"
-	}
 
-	// Configure output writer.
 	out := io.Writer(os.Stdout)
 	outputDesc := "stdout"
-	if cfg.outputFile != "" {
-		f, err := os.OpenFile(cfg.outputFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
-		if err != nil {
-			log.Fatalf("Failed to open output file: %v", err)
-		}
-		defer func() {
-			_ = f.Close()
-		}()
-		out = f
-		outputDesc = "output file"
-	}
 
 	header := Header{
 		"OpenTofu-External-Encryption-Method",
