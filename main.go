@@ -308,6 +308,9 @@ func ageEncryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte
 	if len(cfg.ageRecipients) == 0 {
 		return nil, errors.New("no recipients specified")
 	}
+	if _, err := exec.LookPath(cfg.ageProgram); err != nil {
+		return nil, fmt.Errorf("age program not found: %s", cfg.ageProgram)
+	}
 	recipientsFile, cleanup, err := writeTempRecipients(cfg.ageRecipients)
 	if err != nil {
 		return nil, fmt.Errorf("write recipients to temp file: %w", err)
@@ -338,6 +341,9 @@ func ageEncryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte
 func ageDecryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte, error) {
 	if cfg.ageIdentityFile == "" && cfg.ageIdentity == "" {
 		return nil, errors.New("no identity specified")
+	}
+	if _, err := exec.LookPath(cfg.ageProgram); err != nil {
+		return nil, fmt.Errorf("age program not found: %s", cfg.ageProgram)
 	}
 	args := []string{"--decrypt"}
 	var (
