@@ -1,3 +1,4 @@
+env TF_IN_AUTOMATION=true
 env TF_INPUT=false
 env TF_CLI_ARGS=-no-color
 

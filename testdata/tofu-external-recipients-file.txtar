@@ -1,6 +1,7 @@
-env TF_INPUT=false
+env TF_IN_AUTOMATION=true
 env TF_INPUT=false
 env TF_CLI_ARGS=-no-color
+
 env AGE_RECIPIENTS_FILE=$WORK/recipients.txt
 env AGE_IDENTITY_FILE=$WORK/key.txt
 exec tofu init
