@@ -255,9 +255,7 @@ func main() {
 		"OpenTofu-External-Encryption-Method",
 		1,
 	}
-	if err := json.NewEncoder(out).Encode(header); err != nil {
-		log.Fatalf("Failed to write %s: %v", outputDesc, err)
-	}
+	var buf bytes.Buffer
 
 	dec := json.NewDecoder(in)
 	var inputData Input
@@ -299,7 +297,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to stringify output: %v", err)
 	}
-	if _, err = fmt.Fprintln(out, string(outputData)); err != nil {
+	if err := json.NewEncoder(&buf).Encode(header); err != nil {
+		log.Fatalf("Failed to prepare output: %v", err)
+	}
+	if _, err = fmt.Fprintln(&buf, string(outputData)); err != nil {
+		log.Fatalf("Failed to prepare output: %v", err)
+	}
+	if _, err = io.Copy(out, &buf); err != nil {
 		log.Fatalf("Failed to write %s: %v", outputDesc, err)
 	}
 }
