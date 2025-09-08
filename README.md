@@ -39,7 +39,7 @@ terraform {
         ["tofu-age-encryption", "--encrypt"],
         flatten([for recipient in local.age_recipients : ["--recipient", recipient]])
       )
-      decrypt_command = ["tofu-age-encryption", "--decrypt"]
+      decrypt_command = ["tofu-age-encryption", "--decrypt", "--identity", nonsensitive(var.age_identity)]
     }
 
     state {
@@ -60,6 +60,11 @@ locals {
     "KEY_B",
     "KEY_C",
   ]
+}
+
+variable "age_identity" {
+  type      = string
+  sensitive = true
 }
 
 resource "random_pet" "example" {}
