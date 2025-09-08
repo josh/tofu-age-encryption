@@ -11,7 +11,7 @@ Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
   -encrypt
     	encrypt payload
   -identity string
-    	age identity string
+    	age identity string, file:PATH or cmd:COMMAND
   -identity-command string
     	command whose output is the age identity
   -identity-file string

@@ -10,6 +10,7 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
 
    Environment variables:
    - `AGE_IDENTITY_FILE`: path to your age identity file
+   - `AGE_IDENTITY`: age identity string; supports `file:PATH`, `cmd:COMMAND`, and `command:COMMAND`
    - `AGE_IDENTITY_COMMAND` (alias: `AGE_IDENTITY_CMD`): command whose output is the age identity
    - `AGE_RECIPIENT`: comma-separated list of age recipients
    - `AGE_RECIPIENTS_FILE`: path to a file with newline-separated age recipients
@@ -23,7 +24,7 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
    CLI flags:
 
 - `--identity-file`: path to your age identity file
-- `--identity`: age identity string
+- `--identity`: age identity string or `file:PATH`, `cmd:COMMAND`, `command:COMMAND`
 - `--identity-command`: command whose output is the age identity
 - `--recipient`: may be provided multiple times or as a comma-separated list of recipients
 - `--recipients-file`: path to a file with newline-separated age recipients
