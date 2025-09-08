@@ -12,7 +12,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 )
 
@@ -315,51 +314,24 @@ func ageDecryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte
 	if _, err := exec.LookPath(cfg.ageProgram); err != nil {
 		return nil, fmt.Errorf("age program not found: %s", cfg.ageProgram)
 	}
+	ciphertextFile, cleanup, err := writeTempCiphertext(payload)
+	if err != nil {
+		return nil, fmt.Errorf("write ciphertext to temp file: %w", err)
+	}
+	defer cleanup()
+
 	args := []string{"--decrypt"}
-	var (
-		extra   []*os.File
-		cleanup func()
-	)
 	if cfg.ageIdentityFile != "" {
 		args = append(args, "--identity", cfg.ageIdentityFile)
-	} else if cfg.ageIdentity != "" {
-		if runtime.GOOS == "windows" {
-			var err error
-			cfg.ageIdentityFile, cleanup, err = writeTempIdentity(cfg.ageIdentity)
-			if err != nil {
-				return nil, fmt.Errorf("write identity to temp file: %w", err)
-			}
-			fmt.Fprintln(os.Stderr, "warning: writing age identity to a temporary file on Windows")
-			args = append(args, "--identity", cfg.ageIdentityFile)
-			defer cleanup()
-		} else {
-			r, w, err := os.Pipe()
-			if err != nil {
-				return nil, fmt.Errorf("pipe identity: %w", err)
-			}
-			if _, err := io.WriteString(w, cfg.ageIdentity+"\n"); err != nil {
-				_ = w.Close()
-				_ = r.Close()
-				return nil, fmt.Errorf("write identity: %w", err)
-			}
-			if err := w.Close(); err != nil {
-				_ = r.Close()
-				return nil, fmt.Errorf("write identity: %w", err)
-			}
-			extra = append(extra, r)
-			fd := 3 + len(extra) - 1
-			args = append(args, "--identity", fmt.Sprintf("/dev/fd/%d", fd)) // works on Linux and macOS
-			defer func() {
-				_ = r.Close()
-			}()
-		}
+	} else {
+		args = append(args, "--identity", "-")
 	}
+	args = append(args, ciphertextFile)
 
 	cmd := exec.CommandContext(ctx, cfg.ageProgram, args...)
-	if len(extra) > 0 {
-		cmd.ExtraFiles = append(cmd.ExtraFiles, extra...)
+	if cfg.ageIdentityFile == "" {
+		cmd.Stdin = strings.NewReader(cfg.ageIdentity + "\n")
 	}
-	cmd.Stdin = bytes.NewReader(payload)
 
 	out, err := cmd.Output()
 	if err != nil {
@@ -445,8 +417,32 @@ func writeTempLines(lines []string, pattern string) (string, func(), error) {
 	return tmpfile.Name(), cleanup, nil
 }
 
-func writeTempIdentity(identity string) (string, func(), error) {
-	return writeTempLines([]string{identity}, "age-identity-*")
+func writeTempBytes(data []byte, pattern string) (string, func(), error) {
+	tmpfile, err := os.CreateTemp("", pattern)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+
+	if _, err := tmpfile.Write(data); err != nil {
+		_ = tmpfile.Close()
+		_ = os.Remove(tmpfile.Name())
+		return "", nil, fmt.Errorf("failed to write temp file: %w", err)
+	}
+
+	if err := tmpfile.Close(); err != nil {
+		_ = os.Remove(tmpfile.Name())
+		return "", nil, fmt.Errorf("failed to close temp file: %w", err)
+	}
+
+	cleanup := func() {
+		_ = os.Remove(tmpfile.Name())
+	}
+
+	return tmpfile.Name(), cleanup, nil
+}
+
+func writeTempCiphertext(payload []byte) (string, func(), error) {
+	return writeTempBytes(payload, "age-ciphertext-*")
 }
 
 func writeTempRecipients(recipients []string) (string, func(), error) {
