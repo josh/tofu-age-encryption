@@ -35,7 +35,6 @@ type Output struct {
 	Payload []byte `json:"payload"`
 }
 
-type sliceFlag []string
 type mode int
 
 const (
@@ -45,25 +44,22 @@ const (
 
 type Config struct {
 	mode            mode
-	ageRecipients   []string
+	ageRecipients   map[string]bool
 	ageIdentityFile string
 	ageIdentity     string
 	ageProgram      string
 	version         bool
 }
 
-func (s *sliceFlag) String() string {
-	return strings.Join(*s, ",")
-}
-
-func (s *sliceFlag) Set(value string) error {
+func parseRecipients(value string) []string {
+	var out []string
 	for _, part := range strings.Split(value, ",") {
 		part = strings.TrimSpace(part)
 		if part != "" {
-			*s = append(*s, part)
+			out = append(out, part)
 		}
 	}
-	return nil
+	return out
 }
 
 func parseConfig(ctx context.Context, args []string) (Config, error) {
@@ -88,9 +84,14 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
 	decrypt := fs.Bool("decrypt", false, "decrypt payload")
 	versionFlag := fs.Bool("version", false, "print version")
-	var recipientFlags sliceFlag
-	fs.Var(&recipientFlags, "recipient", "age recipient")
-	recipientsFileFlag := fs.String("recipients-file", os.Getenv("AGE_RECIPIENTS_FILE"), "age recipients file")
+	recipients := make(map[string]bool)
+	fs.Func("recipient", "age recipient", func(value string) error {
+		for _, r := range parseRecipients(value) {
+			recipients[r] = true
+		}
+		return nil
+	})
+	recipientsFileFlag := fs.String("recipients-file", "", "age recipients file")
 	identityFileFlag := fs.String("identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
 	identityFlag := fs.String("identity", "", "age identity string")
 	identityCommandFlag := fs.String("identity-command", "", "command whose output is the age identity")
@@ -106,38 +107,30 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		return Config{}, err
 	}
 
-	var recipients []string
-	recipients = append(recipients, recipientFlags...)
-
 	for _, envVar := range []string{"AGE_RECIPIENT", "SOPS_AGE_RECIPIENTS"} {
 		if val := os.Getenv(envVar); val != "" {
-			var tmp sliceFlag
-			_ = tmp.Set(val)
-			recipients = append(recipients, tmp...)
+			for _, r := range parseRecipients(val) {
+				recipients[r] = true
+			}
 		}
 	}
 
-	if *recipientsFileFlag != "" {
-		rs, err := parseRecipientsFile(*recipientsFileFlag)
+	recipientsFile := *recipientsFileFlag
+	if recipientsFile == "" {
+		recipientsFile = os.Getenv("AGE_RECIPIENTS_FILE")
+	}
+	if recipientsFile != "" {
+		rs, err := parseRecipientsFile(recipientsFile)
 		if err != nil {
 			return Config{}, fmt.Errorf("read age recipients file: %w", err)
 		}
-		recipients = append(recipients, rs...)
-	}
-
-	// Deduplicate recipients.
-	seen := make(map[string]struct{})
-	deduped := make([]string, 0, len(recipients))
-	for _, r := range recipients {
-		if _, ok := seen[r]; ok {
-			continue
+		for _, r := range rs {
+			recipients[r] = true
 		}
-		seen[r] = struct{}{}
-		deduped = append(deduped, r)
 	}
 
 	cfg := Config{
-		ageRecipients: deduped,
+		ageRecipients: recipients,
 		ageProgram:    *ageProgramFlag,
 		version:       *versionFlag,
 	}
@@ -280,7 +273,11 @@ func ageEncryptPayload(ctx context.Context, cfg *Config, payload []byte) ([]byte
 	if _, err := exec.LookPath(cfg.ageProgram); err != nil {
 		return nil, fmt.Errorf("age program not found: %s", cfg.ageProgram)
 	}
-	recipientsFile, cleanup, err := writeTempRecipients(cfg.ageRecipients)
+	recipients := make([]string, 0, len(cfg.ageRecipients))
+	for r := range cfg.ageRecipients {
+		recipients = append(recipients, r)
+	}
+	recipientsFile, cleanup, err := writeTempRecipients(recipients)
 	if err != nil {
 		return nil, fmt.Errorf("write recipients to temp file: %w", err)
 	}
