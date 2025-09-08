@@ -23,8 +23,8 @@ AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
 terraform {
   encryption {
     method "external" "age" {
-      encrypt_command = ["tofu-age-encryption", "--encrypt", "--age-recipient", "age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt"]
-      decrypt_command = ["tofu-age-encryption", "--decrypt", "--age-identity-file", "key.txt"]
+      encrypt_command = ["tofu-age-encryption", "--encrypt", "--recipient", "age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt"]
+      decrypt_command = ["tofu-age-encryption", "--decrypt", "--identity-file", "key.txt"]
     }
 
     state {

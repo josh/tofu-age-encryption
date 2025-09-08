@@ -89,12 +89,12 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	encrypt := fs.Bool("encrypt", false, "encrypt payload")
 	decrypt := fs.Bool("decrypt", false, "decrypt payload")
 	versionFlag := fs.Bool("version", false, "print version")
-	var ageRecipients sliceFlag
-	fs.Var(&ageRecipients, "age-recipient", "age recipient")
-	ageRecipientsFileFlag := fs.String("age-recipients-file", os.Getenv("AGE_RECIPIENTS_FILE"), "age recipients file")
-	ageIdentityFileFlag := fs.String("age-identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
-	ageIdentityFlag := fs.String("age-identity", "", "age identity string")
-	ageIdentityCommandFlag := fs.String("age-identity-command", "", "command whose output is the age identity")
+	var recipientFlags sliceFlag
+	fs.Var(&recipientFlags, "recipient", "age recipient")
+	recipientsFileFlag := fs.String("recipients-file", os.Getenv("AGE_RECIPIENTS_FILE"), "age recipients file")
+	identityFileFlag := fs.String("identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
+	identityFlag := fs.String("identity", "", "age identity string")
+	identityCommandFlag := fs.String("identity-command", "", "command whose output is the age identity")
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -108,7 +108,7 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	}
 
 	var recipients []string
-	recipients = append(recipients, ageRecipients...)
+	recipients = append(recipients, recipientFlags...)
 
 	for _, envVar := range []string{"AGE_RECIPIENT", "SOPS_AGE_RECIPIENTS"} {
 		if val := os.Getenv(envVar); val != "" {
@@ -118,8 +118,8 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		}
 	}
 
-	if *ageRecipientsFileFlag != "" {
-		rs, err := parseRecipientsFile(*ageRecipientsFileFlag)
+	if *recipientsFileFlag != "" {
+		rs, err := parseRecipientsFile(*recipientsFileFlag)
 		if err != nil {
 			return Config{}, fmt.Errorf("read age recipients file: %w", err)
 		}
@@ -156,14 +156,14 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		cfg.mode = modeDecrypt
 	}
 
-	ageIdentityFile := *ageIdentityFileFlag
+	ageIdentityFile := *identityFileFlag
 	var ageIdentity string
 	if ageIdentityFile == "" {
 		switch {
-		case *ageIdentityFlag != "":
-			ageIdentity = *ageIdentityFlag
-		case *ageIdentityCommandFlag != "":
-			key, err := runKeyCommand(ctx, *ageIdentityCommandFlag)
+		case *identityFlag != "":
+			ageIdentity = *identityFlag
+		case *identityCommandFlag != "":
+			key, err := runKeyCommand(ctx, *identityCommandFlag)
 			if err != nil {
 				return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
 			}

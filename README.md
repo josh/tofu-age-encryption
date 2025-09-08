@@ -21,11 +21,12 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
    - `SOPS_AGE_RECIPIENTS`: alias for `AGE_RECIPIENT` (values from both variables are merged; duplicates are ignored)
 
    CLI flags:
-   - `--age-identity-file`: path to your age identity file
-   - `--age-identity`: age identity string
-   - `--age-identity-command`: command whose output is the age identity
-   - `--age-recipient`: may be provided multiple times or as a comma-separated list of recipients
-   - `--age-recipients-file`: path to a file with newline-separated age recipients
+
+- `--identity-file`: path to your age identity file
+- `--identity`: age identity string
+- `--identity-command`: command whose output is the age identity
+- `--recipient`: may be provided multiple times or as a comma-separated list of recipients
+- `--recipients-file`: path to a file with newline-separated age recipients
 
 2. Configure OpenTofu to use the external method:
 
