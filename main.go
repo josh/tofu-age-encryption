@@ -107,7 +107,7 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		return Config{}, err
 	}
 
-	for _, envVar := range []string{"AGE_RECIPIENT", "SOPS_AGE_RECIPIENTS"} {
+	for _, envVar := range []string{"AGE_RECIPIENT", "AGE_RECIPIENTS", "SOPS_AGE_RECIPIENTS"} {
 		if val := os.Getenv(envVar); val != "" {
 			for _, r := range parseRecipients(val) {
 				recipients[r] = true
@@ -178,6 +178,10 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 				return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
 			}
 			ageIdentity = key
+		case os.Getenv("AGE_KEY_FILE") != "":
+			ageIdentityFile = os.Getenv("AGE_KEY_FILE")
+		case os.Getenv("AGE_KEY") != "":
+			ageIdentity = os.Getenv("AGE_KEY")
 		case os.Getenv("SOPS_AGE_KEY_FILE") != "":
 			ageIdentityFile = os.Getenv("SOPS_AGE_KEY_FILE")
 		case os.Getenv("SOPS_AGE_KEY") != "":
