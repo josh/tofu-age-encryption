@@ -92,7 +92,7 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	fs.Var(&recipientFlags, "recipient", "age recipient")
 	recipientsFileFlag := fs.String("recipients-file", os.Getenv("AGE_RECIPIENTS_FILE"), "age recipients file")
 	identityFileFlag := fs.String("identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
-	identityFlag := fs.String("identity", "", "age identity string")
+	identityFlag := fs.String("identity", os.Getenv("AGE_IDENTITY"), "age identity string, file:PATH or cmd:COMMAND")
 	identityCommandFlag := fs.String("identity-command", "", "command whose output is the age identity")
 	ageProgramFlag := fs.String("age-path", ageProgram, "path to age binary")
 	if err := fs.Parse(args); err != nil {
@@ -160,7 +160,25 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	if ageIdentityFile == "" {
 		switch {
 		case *identityFlag != "":
-			ageIdentity = *identityFlag
+			val := *identityFlag
+			switch {
+			case strings.HasPrefix(val, "file:"):
+				ageIdentityFile = strings.TrimPrefix(val, "file:")
+			case strings.HasPrefix(val, "cmd:"):
+				key, err := runKeyCommand(ctx, strings.TrimPrefix(val, "cmd:"))
+				if err != nil {
+					return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
+				}
+				ageIdentity = key
+			case strings.HasPrefix(val, "command:"):
+				key, err := runKeyCommand(ctx, strings.TrimPrefix(val, "command:"))
+				if err != nil {
+					return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
+				}
+				ageIdentity = key
+			default:
+				ageIdentity = val
+			}
 		case *identityCommandFlag != "":
 			key, err := runKeyCommand(ctx, *identityCommandFlag)
 			if err != nil {
