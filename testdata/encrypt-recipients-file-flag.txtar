@@ -1,5 +1,5 @@
 stdin input.json
-exec tofu-age-encryption --encrypt --age-recipients-file recipients.txt
+exec tofu-age-encryption --encrypt --recipients-file recipients.txt
 
 stdin stdout
 exec sed 's/\("payload":"\)[^"]*/\1MASK/'

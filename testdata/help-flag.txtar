@@ -4,21 +4,21 @@ cmp stdout help.txt
 
 -- help.txt --
 Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
-  -age-identity string
-    	age identity string
-  -age-identity-command string
-    	command whose output is the age identity
-  -age-identity-file string
-    	age identity file
   -age-path string
     	path to age binary (default "MASK")
-  -age-recipient value
-    	age recipient
-  -age-recipients-file string
-    	age recipients file
   -decrypt
     	decrypt payload
   -encrypt
     	encrypt payload
+  -identity string
+    	age identity string
+  -identity-command string
+    	command whose output is the age identity
+  -identity-file string
+    	age identity file
+  -recipient value
+    	age recipient
+  -recipients-file string
+    	age recipients file
   -version
     	print version

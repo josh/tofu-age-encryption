@@ -1,5 +1,5 @@
 stdin input.json
-exec tofu-age-encryption --decrypt --age-identity-command 'cat key.txt'
+exec tofu-age-encryption --decrypt --identity-command 'cat key.txt'
 cmp stdout stdout.json
 
 -- input.json --

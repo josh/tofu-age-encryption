@@ -1,5 +1,5 @@
 stdin input.json
-! exec tofu-age-encryption --age-path /missing/age --decrypt --age-identity-file key.txt
+! exec tofu-age-encryption --age-path /missing/age --decrypt --identity-file key.txt
 cmp stdout stdout.json
 cmp stderr stderr.txt
 

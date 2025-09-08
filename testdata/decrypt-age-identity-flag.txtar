@@ -1,5 +1,5 @@
 stdin input.json
-exec tofu-age-encryption --decrypt --age-identity AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
+exec tofu-age-encryption --decrypt --identity AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
 cmp stdout stdout.json
 
 -- input.json --
