@@ -104,6 +104,12 @@ Build the project with:
 $ go build ./...
 ```
 
+## Sensitive Data Handling
+
+- Never write plain text or private keys to disk, including through temporary files.
+- Ciphertext and public keys may be stored in a tempfile when necessary, but prefer piping data through stdin/stdout.
+- The `age` command accepts `-` for stdin/stdout on several flags (for example, `--identity -` or `--recipients-file -`), which helps avoid creating temp files.
+
 ## Comments
 
 Keep comments concise. Only add them when they clarify non-obvious logic.
