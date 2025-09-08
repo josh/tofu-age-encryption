@@ -28,13 +28,16 @@ OpenTofu encrypts state with a symmetric key derived from a shared passphrase th
 - `--recipient`: may be provided multiple times or as a comma-separated list of recipients
 - `--recipients-file`: path to a file with newline-separated age recipients
 
-2. Configure OpenTofu to use the external method:
+2. Configure OpenTofu to use the external method. For multiple recipients, build the command dynamically:
 
 ```hcl
 terraform {
   encryption {
     method "external" "age" {
-      encrypt_command = ["tofu-age-encryption", "--encrypt"]
+      encrypt_command = concat(
+        ["tofu-age-encryption", "--encrypt"],
+        flatten([for recipient in local.age_recipients : ["--recipient", recipient]])
+      )
       decrypt_command = ["tofu-age-encryption", "--decrypt"]
     }
 
@@ -50,6 +53,14 @@ terraform {
   }
 }
 
+locals {
+  age_recipients = [
+    "KEY_A",
+    "KEY_B",
+    "KEY_C",
+  ]
+}
+
 resource "random_pet" "example" {}
 
 output "pet" {
@@ -57,7 +68,7 @@ output "pet" {
 }
 ```
 
-3. Run OpenTofu as usual. The state and plan files are encrypted with the given age recipient:
+3. Run OpenTofu as usual. The state and plan files are encrypted with the given age recipients:
 
 ```sh
 $ tofu init
