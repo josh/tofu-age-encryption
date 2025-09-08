@@ -80,3 +80,15 @@ output "pet" {
 $ tofu init
 $ tofu apply
 ```
+
+## Manual state recovery
+
+If the `tofu-age-encryption` binary is unavailable, you can decrypt an existing state file using common command-line tools:
+
+```sh
+jq --raw-output '.encrypted_data' terraform.tfstate | base64 --decode >state.age
+age --decrypt --identity key.txt state.age >state.json
+jq . state.json
+```
+
+This process does not require `tofu-age-encryption` and can be used to recover the plain text state for backup or debugging.

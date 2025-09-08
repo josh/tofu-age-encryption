@@ -1,0 +1,47 @@
+env TF_IN_AUTOMATION=true
+env TF_INPUT=false
+env TF_CLI_ARGS=-no-color
+
+env AGE_RECIPIENT=age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+env AGE_IDENTITY_FILE=$WORK/key.txt
+
+exec tofu init
+exec tofu apply --auto-approve --lock=false
+exec jq --raw-output '.encrypted_data' terraform.tfstate
+cp stdout state.b64
+stdin state.b64
+exec base64 --decode
+cp stdout state.age
+exec age --decrypt --identity key.txt state.age
+cp stdout state.json
+exec jq --raw-output '.outputs.foo.value' state.json
+stdout bar
+
+-- key.txt --
+# created: 2025-09-05T17:27:52-07:00
+# public key: age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
+
+-- main.tf --
+terraform {
+  encryption {
+    method "external" "age" {
+      encrypt_command = ["tofu-age-encryption", "--encrypt"]
+      decrypt_command = ["tofu-age-encryption", "--decrypt"]
+    }
+
+    state {
+      method = method.external.age
+      enforced = true
+    }
+
+    plan {
+      method = method.external.age
+      enforced = true
+    }
+  }
+}
+
+output "foo" {
+  value = "bar"
+}
