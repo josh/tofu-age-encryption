@@ -63,6 +63,13 @@ func parseRecipients(value string) []string {
 }
 
 func parseConfig(ctx context.Context, args []string) (Config, error) {
+	if len(args) > 0 {
+		switch args[0] {
+		case "encrypt", "decrypt", "version":
+			args[0] = "--" + args[0]
+		}
+	}
+
 	ageProgram := AgeProgram
 	if ageProgram == "" || ageProgram == "age" {
 		if path, err := exec.LookPath("age"); err == nil {
