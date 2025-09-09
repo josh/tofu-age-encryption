@@ -247,14 +247,6 @@ func main() {
 	out := io.Writer(os.Stdout)
 	outputDesc := "stdout"
 
-	header := Header{
-		"OpenTofu-External-Encryption-Method",
-		1,
-	}
-	if err := json.NewEncoder(out).Encode(header); err != nil {
-		log.Fatalf("Failed to write %s: %v", outputDesc, err)
-	}
-
 	dec := json.NewDecoder(in)
 	var inputData Input
 	var first json.RawMessage
@@ -262,6 +254,10 @@ func main() {
 		log.Fatalf("Failed to read %s: %v", inputDesc, err)
 	}
 	var hdr Header
+	header := Header{
+		"OpenTofu-External-Encryption-Method",
+		1,
+	}
 	if err := json.Unmarshal(first, &hdr); err == nil && hdr.Magic == header.Magic {
 		if err := dec.Decode(&first); err != nil {
 			log.Fatalf("Failed to read %s: %v", inputDesc, err)
@@ -291,11 +287,10 @@ func main() {
 	output := Output{
 		Payload: outputPayload,
 	}
-	outputData, err := json.Marshal(output)
-	if err != nil {
-		log.Fatalf("Failed to stringify output: %v", err)
+	if err := json.NewEncoder(out).Encode(header); err != nil {
+		log.Fatalf("Failed to write %s: %v", outputDesc, err)
 	}
-	if _, err = fmt.Fprintln(out, string(outputData)); err != nil {
+	if err := json.NewEncoder(out).Encode(output); err != nil {
 		log.Fatalf("Failed to write %s: %v", outputDesc, err)
 	}
 }

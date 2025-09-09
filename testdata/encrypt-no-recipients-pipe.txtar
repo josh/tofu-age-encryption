@@ -1,10 +1,6 @@
-stdin input.json
-! exec tofu-age-encryption --encrypt
+! exec sh -c 'printf "{\"payload\":\"dGVzdA==\"}" | tofu-age-encryption --encrypt'
 cmp stdout stdout.json
 cmp stderr stderr.txt
-
--- input.json --
-{"payload":"c2VjcmV0"}
 
 -- stdout.json --
 -- stderr.txt --

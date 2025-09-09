@@ -12,6 +12,5 @@ AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
 {"payload":"aGVsbG8="}
 
 -- stdout.json --
-{"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
 Failed to decrypt payload: age program not found: /missing/age
