@@ -1,0 +1,44 @@
+stdin input.json
+exec tofu-age-encryption --encrypt --recipient age1yh02jaysl73ph50r4xrage2hvstp9hjy72r4p4tlv99zveyf9fvsxc4h9n --recipients-file recipients.txt
+
+stdin stdout
+exec tail -n +2
+cp stdout cipher.json
+
+stdin cipher.json
+exec tofu-age-encryption --decrypt --identity-file key1.txt
+cmp stdout stdout.json
+
+stdin cipher.json
+exec tofu-age-encryption --decrypt --identity-file key2.txt
+cmp stdout stdout.json
+
+stdin cipher.json
+exec tofu-age-encryption --decrypt --identity-file key3.txt
+cmp stdout stdout.json
+
+-- input.json --
+{"payload":"c2VjcmV0"}
+
+-- recipients.txt --
+age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+age19xls7dzpf24kzfd0vu2vy7w3e4r7cxsxgwgqeccupzswzpktxu6qqqd7vt
+
+-- key1.txt --
+# created: 2025-09-05T17:27:52-07:00
+# public key: age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
+
+-- key2.txt --
+# created: 2025-09-06T20:25:14Z
+# public key: age19xls7dzpf24kzfd0vu2vy7w3e4r7cxsxgwgqeccupzswzpktxu6qqqd7vt
+AGE-SECRET-KEY-17Y29Y9E2XTJ6ZPZ6X3YNSE3NVREHJG64GFPYWNRF0MSU4L0E3V5Q84AFZH
+
+-- key3.txt --
+# created: 2025-09-06T01:25:41Z
+# public key: age1yh02jaysl73ph50r4xrage2hvstp9hjy72r4p4tlv99zveyf9fvsxc4h9n
+AGE-SECRET-KEY-1UTNEY8FW0GN8CXZT8KERWNL9TGDVMQYRT86C6WZQGKTDWTRL7E4Q6CMNMM
+
+-- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+{"payload":"c2VjcmV0"}
