@@ -1,0 +1,25 @@
+stdin input.json
+exec tofu-age-encryption --encrypt --recipients-file recipients.txt --recipients-file recipients.txt
+
+stdin stdout
+exec tail -n +2
+cp stdout cipher.json
+
+stdin cipher.json
+exec tofu-age-encryption --decrypt --identity-file key1.txt
+cmp stdout stdout.json
+
+-- input.json --
+{"payload":"c2VjcmV0"}
+
+-- recipients.txt --
+age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+
+-- key1.txt --
+# created: 2025-09-05T17:27:52-07:00
+# public key: age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+AGE-SECRET-KEY-1PM25GKMYEWAKGVNM44FPMFXMEEGVDTXUEN3H3LNH2JACJA0UNZPQG00E7N
+
+-- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+{"payload":"c2VjcmV0"}

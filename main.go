@@ -98,7 +98,11 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		}
 		return nil
 	})
-	recipientsFileFlag := fs.String("recipients-file", "", "age recipients file")
+	var recipientsFiles []string
+	fs.Func("recipients-file", "age recipients file", func(value string) error {
+		recipientsFiles = append(recipientsFiles, value)
+		return nil
+	})
 	identityFileFlag := fs.String("identity-file", os.Getenv("AGE_IDENTITY_FILE"), "age identity file")
 	identityFlag := fs.String("identity", os.Getenv("AGE_IDENTITY"), "age identity string, file:PATH or cmd:COMMAND")
 	identityCommandFlag := fs.String("identity-command", "", "command whose output is the age identity")
@@ -122,11 +126,12 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		}
 	}
 
-	recipientsFile := *recipientsFileFlag
-	if recipientsFile == "" {
-		recipientsFile = os.Getenv("AGE_RECIPIENTS_FILE")
+	if len(recipientsFiles) == 0 {
+		if env := os.Getenv("AGE_RECIPIENTS_FILE"); env != "" {
+			recipientsFiles = append(recipientsFiles, env)
+		}
 	}
-	if recipientsFile != "" {
+	for _, recipientsFile := range recipientsFiles {
 		rs, err := parseRecipientsFile(recipientsFile)
 		if err != nil {
 			return Config{}, fmt.Errorf("read age recipients file: %w", err)

@@ -18,7 +18,7 @@ Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
     	age identity file
   -recipient value
     	age recipient
-  -recipients-file string
+  -recipients-file value
     	age recipients file
   -version
     	print version
