@@ -1,6 +1,10 @@
-! exec sh -c 'printf "{\"payload\":\"dGVzdA==\"}" | tofu-age-encryption --encrypt'
+stdin stdin.json
+! exec tofu-age-encryption --encrypt
 cmp stdout stdout.json
 cmp stderr stderr.txt
+
+-- stdin.json --
+{"payload":"dGVzdA=="}
 
 -- stdout.json --
 -- stderr.txt --

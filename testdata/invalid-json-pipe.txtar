@@ -1,6 +1,10 @@
-! exec sh -c 'echo invalid json | tofu-age-encryption --encrypt'
+stdin stdin.txt
+! exec tofu-age-encryption --encrypt
 cmp stdout stdout.json
 cmp stderr stderr.txt
+
+-- stdin.txt --
+invalid json
 
 -- stdout.json --
 -- stderr.txt --
