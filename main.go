@@ -247,11 +247,12 @@ func main() {
 	out := io.Writer(os.Stdout)
 	outputDesc := "stdout"
 
+	enc := json.NewEncoder(out)
 	header := Header{
 		"OpenTofu-External-Encryption-Method",
 		1,
 	}
-	if err := json.NewEncoder(out).Encode(header); err != nil {
+	if err := enc.Encode(header); err != nil {
 		log.Fatalf("Failed to write %s: %v", outputDesc, err)
 	}
 
@@ -291,11 +292,7 @@ func main() {
 	output := Output{
 		Payload: outputPayload,
 	}
-	outputData, err := json.Marshal(output)
-	if err != nil {
-		log.Fatalf("Failed to stringify output: %v", err)
-	}
-	if _, err = fmt.Fprintln(out, string(outputData)); err != nil {
+	if err := enc.Encode(output); err != nil {
 		log.Fatalf("Failed to write %s: %v", outputDesc, err)
 	}
 }

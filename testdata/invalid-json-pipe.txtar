@@ -1,0 +1,12 @@
+stdin stdin.txt
+! exec tofu-age-encryption --encrypt
+cmp stdout stdout.json
+cmp stderr stderr.txt
+
+-- stdin.txt --
+invalid json
+
+-- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+-- stderr.txt --
+Failed to read stdin: invalid character 'i' looking for beginning of value
