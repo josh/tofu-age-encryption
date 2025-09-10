@@ -258,18 +258,8 @@ func main() {
 
 	dec := json.NewDecoder(in)
 	var inputData Input
-	var first json.RawMessage
-	if err := dec.Decode(&first); err != nil {
+	if err := dec.Decode(&inputData); err != nil {
 		log.Fatalf("Failed to read %s: %v", inputDesc, err)
-	}
-	var hdr Header
-	if err := json.Unmarshal(first, &hdr); err == nil && hdr.Magic == header.Magic {
-		if err := dec.Decode(&first); err != nil {
-			log.Fatalf("Failed to read %s: %v", inputDesc, err)
-		}
-	}
-	if err := json.Unmarshal(first, &inputData); err != nil {
-		log.Fatalf("Failed to parse %s: %v", inputDesc, err)
 	}
 
 	var (
