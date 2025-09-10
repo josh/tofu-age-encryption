@@ -6,5 +6,6 @@ cmp stderr stderr.txt
 -- stdin.json --
 {
 -- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
 Failed to read stdin: unexpected EOF

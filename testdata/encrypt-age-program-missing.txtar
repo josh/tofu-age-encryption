@@ -10,5 +10,6 @@ age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
 {"payload":"aGVsbG8="}
 
 -- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
 Failed to encrypt payload: age program not found: /missing/age

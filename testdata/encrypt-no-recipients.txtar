@@ -7,5 +7,6 @@ cmp stderr stderr.txt
 {"payload":"c2VjcmV0"}
 
 -- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
 Failed to encrypt payload: no recipients specified

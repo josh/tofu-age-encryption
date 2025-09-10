@@ -9,6 +9,7 @@ cmp stderr stderr.txt
 {"payload":"c2VjcmV0"}
 
 -- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
 Failed to decrypt payload: age: error: reading "/tmp/missing": failed to open file: open /tmp/missing: no such file or directory
 age: report unexpected or unhelpful errors at https://filippo.io/age/report
