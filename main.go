@@ -18,7 +18,7 @@ import (
 // constants settable at build time.
 var (
 	AgeProgram = "age"
-	Version    = "0.1.0"
+	Version    = "1.0.0"
 )
 
 type Header struct {
