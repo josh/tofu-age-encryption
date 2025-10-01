@@ -53,17 +53,17 @@ The test suite uses [testscript](https://pkg.go.dev/github.com/rogpeppe/go-inter
 
 ### Testdata updates and CI
 
-Running the tests without the `CI` environment variable may rewrite expected results in `testdata`:
+Set `UPDATE_SCRIPTS` to a truthy value such as `true` or `1` to rewrite expected results in `testdata`:
 
 ```sh
-$ go test ./...
+$ UPDATE_SCRIPTS=true go test ./...
 $ git diff
 ```
 
-Review the diff to understand any changes. After updating testdata, rerun the suite with the flag set to ensure it still passes in continuous integration:
+Review the diff to understand any changes. After updating testdata, rerun the suite without `UPDATE_SCRIPTS` to ensure it still passes in continuous integration:
 
 ```sh
-$ CI=true go test ./...
+$ go test ./...
 ```
 
 ## Formatting
