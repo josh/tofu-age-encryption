@@ -4,4 +4,4 @@ cmp stderr stderr.txt
 
 -- stdout.json --
 -- stderr.txt --
-usage: expected --encrypt or --decrypt
+flag provided but not defined: -invalid

@@ -15,7 +15,7 @@ exec cat terraform.tfstate
 env AGE_IDENTITY_FILE=$WORK/key-b.txt
 
 ! exec tofu apply -auto-approve -lock=false
-stderr 'Failed to decrypt payload: age: error: no identity matched any of the recipients'
+stderr 'Failed to decrypt payload: failed to decrypt payload: identity did not match any of the recipients: incorrect identity for recipient block'
 
 -- key-a.txt --
 # created: 2025-09-05T17:27:52-07:00

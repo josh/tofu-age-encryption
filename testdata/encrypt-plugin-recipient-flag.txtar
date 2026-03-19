@@ -1,0 +1,13 @@
+stdin input.json
+exec tofu-age-encryption --encrypt --recipient age1test1qypqxpqhuqytu
+
+stdin stdout
+exec sed 's/\("payload":"\)[^"]*/\1MASK/'
+cmp stdout stdout.json
+
+-- input.json --
+{"payload":"c2VjcmV0"}
+
+-- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+{"payload":"MASK"}
