@@ -1,11 +1,11 @@
-exec sh -c 'tofu-age-encryption --help | sed -E "s|default \"[^\"]*age\"|default \"MASK\"|"'
+exec tofu-age-encryption --help
 cmp stdout help.txt
 ! stderr .
 
 -- help.txt --
 Usage: tofu-age-encryption [--encrypt | --decrypt] [options]
-  -age-path string
-    	path to age binary (default "MASK")
+  -age-plugin-path string
+    	colon-separated paths to search for age plugins
   -decrypt
     	decrypt payload
   -encrypt

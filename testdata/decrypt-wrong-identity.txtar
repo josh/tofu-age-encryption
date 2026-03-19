@@ -14,5 +14,4 @@ AGE-SECRET-KEY-19LDXPQ0ZFT5VRG2LT84470RAJ79QZU9HWJJ97LM7YF0KWX6GCGHSLEVXKZ
 -- stdout.json --
 {"magic":"OpenTofu-External-Encryption-Method","version":1}
 -- stderr.txt --
-Failed to decrypt payload: age: error: no identity matched any of the recipients
-age: report unexpected or unhelpful errors at https://filippo.io/age/report
+Failed to decrypt payload: failed to decrypt payload: identity did not match any of the recipients: incorrect identity for recipient block
