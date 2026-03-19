@@ -351,6 +351,9 @@ func ageDecryptPayload(cfg *Config, payload []byte) ([]byte, error) {
 }
 
 func parseRecipientString(s string) (age.Recipient, error) {
+	if strings.HasPrefix(s, "age1pq1") {
+		return age.ParseHybridRecipient(s)
+	}
 	if strings.HasPrefix(s, "age1") && strings.Count(s, "1") > 1 {
 		return plugin.NewRecipient(s, &plugin.ClientUI{})
 	}
@@ -383,6 +386,9 @@ func parseIdentityList(f io.Reader) ([]age.Identity, error) {
 func parseIdentityString(s string) (age.Identity, error) {
 	if strings.HasPrefix(s, "AGE-PLUGIN-") {
 		return plugin.NewIdentity(s, &plugin.ClientUI{})
+	}
+	if strings.HasPrefix(s, "AGE-SECRET-KEY-PQ-1") {
+		return age.ParseHybridIdentity(s)
 	}
 	return age.ParseX25519Identity(s)
 }
