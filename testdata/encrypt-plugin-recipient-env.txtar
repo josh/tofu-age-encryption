@@ -1,0 +1,23 @@
+env AGE_RECIPIENTS=age1test1qypqxpqhuqytu
+env AGE_KEY_FILE=$WORK/identity.txt
+stdin plain.json
+exec tofu-age-encryption --encrypt
+
+stdin stdout
+exec tail -n +2
+cp stdout cipher.json
+stdin cipher.json
+exec tofu-age-encryption --decrypt
+cmp stdout stdout.json
+cmp stderr stderr.txt
+
+-- plain.json --
+{"payload":"c2VjcmV0"}
+
+-- identity.txt --
+AGE-PLUGIN-TEST-1QYPQXPQWSMN6R
+
+-- stdout.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
+{"payload":"c2VjcmV0"}
+-- stderr.txt --
