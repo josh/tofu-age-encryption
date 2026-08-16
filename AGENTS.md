@@ -1,10 +1,10 @@
 # Agents Guide
 
-This project is written in Go and uses Go modules for dependency management. The repository assumes Go 1.24 or newer.
+This project is written in Go and uses Go modules for dependency management. The repository assumes Go 1.25 or newer.
 
 ## Setup
 
-1. Install Go 1.24 or later.
+1. Install Go 1.25 or later.
 2. Install age:
 
 ```sh
