@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"filippo.io/age"
@@ -240,6 +241,9 @@ func main() {
 		return
 	}
 
+	log.Default().SetOutput(os.Stderr)
+	log.Default().SetFlags(0) // suppress timestamps for deterministic output
+
 	var pluginPaths []string
 	if cfg.agePluginPath != "" {
 		pluginPaths = append(pluginPaths, strings.Split(cfg.agePluginPath, string(os.PathListSeparator))...)
@@ -250,13 +254,20 @@ func main() {
 	if AgePluginPath != "" {
 		pluginPaths = append(pluginPaths, strings.Split(AgePluginPath, string(os.PathListSeparator))...)
 	}
+	for i, path := range pluginPaths {
+		if path == "" || filepath.IsAbs(path) {
+			continue
+		}
+		absolutePath, err := filepath.Abs(path)
+		if err != nil {
+			log.Fatalf("Failed to resolve age plugin path %q: %v", path, err)
+		}
+		pluginPaths[i] = absolutePath
+	}
 	if len(pluginPaths) > 0 {
 		combined := strings.Join(pluginPaths, string(os.PathListSeparator))
 		_ = os.Setenv("PATH", combined+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
-
-	log.Default().SetOutput(os.Stderr)
-	log.Default().SetFlags(0) // suppress timestamps for deterministic output
 
 	in := io.Reader(os.Stdin)
 	inputDesc := "stdin"

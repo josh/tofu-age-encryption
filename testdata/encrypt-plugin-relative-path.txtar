@@ -1,0 +1,16 @@
+[windows] skip 'requires POSIX plugin wrapper'
+
+chmod 0755 plugins/age-plugin-test
+stdin input.json
+exec tofu-age-encryption --encrypt --age-plugin-path=plugins --recipient age1test1qypqxpqhuqytu
+stdout '"magic":"OpenTofu-External-Encryption-Method"'
+stdout '"payload":"[^" ]+"'
+! stderr .
+
+-- input.json --
+{"payload":"c2VjcmV0"}
+-- plugins/age-plugin-test --
+#!/bin/sh
+PATH=${PATH#*:}
+export PATH
+exec age-plugin-test "$@"
