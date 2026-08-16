@@ -223,6 +223,41 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	return cfg, nil
 }
 
+func decodeInput(dec *json.Decoder) (Input, error) {
+	var raw json.RawMessage
+	if err := dec.Decode(&raw); err != nil {
+		return Input{}, err
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return Input{}, err
+	}
+	for name := range fields {
+		if name != "key" && name != "payload" {
+			return Input{}, fmt.Errorf("json: unknown field %q", name)
+		}
+	}
+	payload, ok := fields["payload"]
+	if !ok || bytes.Equal(bytes.TrimSpace(payload), []byte("null")) {
+		return Input{}, errors.New("missing payload")
+	}
+
+	var input Input
+	if err := json.Unmarshal(raw, &input); err != nil {
+		return Input{}, err
+	}
+
+	var trailing json.RawMessage
+	if err := dec.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err != nil {
+			return Input{}, fmt.Errorf("unexpected trailing data: %w", err)
+		}
+		return Input{}, errors.New("unexpected trailing data")
+	}
+	return input, nil
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -274,8 +309,8 @@ func main() {
 	}
 
 	dec := json.NewDecoder(in)
-	var inputData Input
-	if err := dec.Decode(&inputData); err != nil {
+	inputData, err := decodeInput(dec)
+	if err != nil {
 		log.Fatalf("Failed to read %s: %v", inputDesc, err)
 	}
 

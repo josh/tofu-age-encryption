@@ -1,0 +1,46 @@
+env AGE_RECIPIENT=age1s2r63x2q98nmv8ppjv5c2zv5xlm4lp0makhmtsumglwhhwnt2e5srs47qt
+
+stdin missing.json
+! exec tofu-age-encryption --encrypt
+cmp stdout header.json
+stderr 'Failed to read stdin: missing payload'
+
+stdin null.json
+! exec tofu-age-encryption --encrypt
+cmp stdout header.json
+stderr 'Failed to read stdin: missing payload'
+
+stdin unknown.json
+! exec tofu-age-encryption --encrypt
+cmp stdout header.json
+stderr 'Failed to read stdin: json: unknown field "bogus"'
+
+stdin uppercase.json
+! exec tofu-age-encryption --encrypt
+cmp stdout header.json
+stderr 'Failed to read stdin: json: unknown field "Payload"'
+
+stdin trailing.json
+! exec tofu-age-encryption --encrypt
+cmp stdout header.json
+stderr 'Failed to read stdin: unexpected trailing data'
+
+stdin second.json
+! exec tofu-age-encryption --encrypt
+cmp stdout header.json
+stderr 'Failed to read stdin: unexpected trailing data'
+
+-- missing.json --
+{}
+-- null.json --
+{"payload":null}
+-- unknown.json --
+{"payload":"dGVzdA==","bogus":true}
+-- uppercase.json --
+{"Payload":"dGVzdA=="}
+-- trailing.json --
+{"payload":"dGVzdA=="} trailing
+-- second.json --
+{"payload":"dGVzdA=="} {"payload":"dGVzdA=="}
+-- header.json --
+{"magic":"OpenTofu-External-Encryption-Method","version":1}
