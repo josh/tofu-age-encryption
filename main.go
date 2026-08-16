@@ -112,9 +112,6 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		}
 		return Config{}, err
 	}
-	if fs.NArg() != 0 {
-		return Config{}, fmt.Errorf("unexpected argument %q", fs.Arg(0))
-	}
 
 	if *versionFlag {
 		return Config{version: true}, nil
