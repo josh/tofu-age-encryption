@@ -112,6 +112,17 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		}
 		return Config{}, err
 	}
+	var identityFileSet, identitySet, identityCommandSet bool
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "identity-file":
+			identityFileSet = true
+		case "identity":
+			identitySet = true
+		case "identity-command":
+			identityCommandSet = true
+		}
+	})
 
 	if *versionFlag {
 		return Config{version: true}, nil
@@ -157,10 +168,18 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	if cfg.mode == modeDecrypt {
 		var ageIdentity string
 		ageIdentityFile := *identityFileFlag
+		identity := *identityFlag
+		identityCommand := *identityCommandFlag
+		if !identityFileSet && (identitySet || identityCommandSet) {
+			ageIdentityFile = ""
+		}
+		if !identitySet && identityCommandSet {
+			identity = ""
+		}
 		if ageIdentityFile == "" {
 			switch {
-			case *identityFlag != "":
-				val := *identityFlag
+			case identity != "":
+				val := identity
 				switch {
 				case strings.HasPrefix(val, "file:"):
 					ageIdentityFile = strings.TrimPrefix(val, "file:")
@@ -179,8 +198,8 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 				default:
 					ageIdentity = val
 				}
-			case *identityCommandFlag != "":
-				key, err := runKeyCommand(ctx, *identityCommandFlag)
+			case identityCommand != "":
+				key, err := runKeyCommand(ctx, identityCommand)
 				if err != nil {
 					return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
 				}

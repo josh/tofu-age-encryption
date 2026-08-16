@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -25,6 +26,36 @@ func TestScript(t *testing.T) {
 		Dir:             "testdata",
 		ContinueOnError: true,
 		UpdateScripts:   updateScripts,
+	})
+}
+
+func TestParseConfigIdentityFlagsOverrideEnvironment(t *testing.T) {
+	t.Run("identity", func(t *testing.T) {
+		t.Setenv("AGE_IDENTITY_FILE", filepath.Join(t.TempDir(), "missing"))
+
+		cfg, err := parseConfig(t.Context(), []string{"--decrypt", "--identity", "explicit"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.ageIdentity != "explicit" {
+			t.Fatalf("age identity = %q, want explicit", cfg.ageIdentity)
+		}
+	})
+
+	t.Run("identity command", func(t *testing.T) {
+		t.Setenv("AGE_IDENTITY", "environment")
+
+		cfg, err := parseConfig(t.Context(), []string{"--decrypt", "--identity-command", "sh -c pwd"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		workDir, err := os.Getwd()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.ageIdentity != workDir {
+			t.Fatalf("age identity = %q, want %q", cfg.ageIdentity, workDir)
+		}
 	})
 }
 
