@@ -117,18 +117,30 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		return Config{version: true}, nil
 	}
 
-	for _, envVar := range []string{"AGE_RECIPIENT", "AGE_RECIPIENTS", "SOPS_AGE_RECIPIENTS"} {
-		if val := os.Getenv(envVar); val != "" {
-			for _, r := range parseRecipients(val) {
-				recipients[r] = true
-			}
-		}
+	cfg := Config{
+		agePluginPath: *agePluginPathFlag,
 	}
 
-	if len(recipientsFiles) == 0 {
-		if env := os.Getenv("AGE_RECIPIENTS_FILE"); env != "" {
-			recipientsFiles = append(recipientsFiles, env)
+	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {
+		return Config{}, fmt.Errorf("usage: expected --encrypt or --decrypt")
+	}
+	if *encrypt {
+		cfg.mode = modeEncrypt
+		for _, envVar := range []string{"AGE_RECIPIENT", "AGE_RECIPIENTS", "SOPS_AGE_RECIPIENTS"} {
+			if val := os.Getenv(envVar); val != "" {
+				for _, r := range parseRecipients(val) {
+					recipients[r] = true
+				}
+			}
 		}
+
+		if len(recipientsFiles) == 0 {
+			if env := os.Getenv("AGE_RECIPIENTS_FILE"); env != "" {
+				recipientsFiles = append(recipientsFiles, env)
+			}
+		}
+	} else {
+		cfg.mode = modeDecrypt
 	}
 	for _, recipientsFile := range recipientsFiles {
 		rs, err := parseRecipientsFile(recipientsFile)
@@ -139,20 +151,7 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 			recipients[r] = true
 		}
 	}
-
-	cfg := Config{
-		ageRecipients: recipients,
-		agePluginPath: *agePluginPathFlag,
-	}
-
-	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {
-		return Config{}, fmt.Errorf("usage: expected --encrypt or --decrypt")
-	}
-	if *encrypt {
-		cfg.mode = modeEncrypt
-	} else {
-		cfg.mode = modeDecrypt
-	}
+	cfg.ageRecipients = recipients
 
 	if cfg.mode == modeDecrypt {
 		var ageIdentity string
