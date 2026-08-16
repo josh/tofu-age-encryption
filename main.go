@@ -64,6 +64,25 @@ func parseRecipients(value string) []string {
 	return out
 }
 
+func resolveIdentityValue(ctx context.Context, value string) (identity, identityFile string, err error) {
+	switch {
+	case strings.HasPrefix(value, "file:"):
+		return "", strings.TrimPrefix(value, "file:"), nil
+	case strings.HasPrefix(value, "cmd:"):
+		value = strings.TrimPrefix(value, "cmd:")
+	case strings.HasPrefix(value, "command:"):
+		value = strings.TrimPrefix(value, "command:")
+	default:
+		return value, "", nil
+	}
+
+	key, err := runKeyCommand(ctx, value)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to execute age identity command: %w", err)
+	}
+	return key, "", nil
+}
+
 func parseConfig(ctx context.Context, args []string) (Config, error) {
 	if len(args) > 0 {
 		switch args[0] {
@@ -160,24 +179,10 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		if ageIdentityFile == "" {
 			switch {
 			case *identityFlag != "":
-				val := *identityFlag
-				switch {
-				case strings.HasPrefix(val, "file:"):
-					ageIdentityFile = strings.TrimPrefix(val, "file:")
-				case strings.HasPrefix(val, "cmd:"):
-					key, err := runKeyCommand(ctx, strings.TrimPrefix(val, "cmd:"))
-					if err != nil {
-						return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
-					}
-					ageIdentity = key
-				case strings.HasPrefix(val, "command:"):
-					key, err := runKeyCommand(ctx, strings.TrimPrefix(val, "command:"))
-					if err != nil {
-						return Config{}, fmt.Errorf("failed to execute age identity command: %w", err)
-					}
-					ageIdentity = key
-				default:
-					ageIdentity = val
+				var err error
+				ageIdentity, ageIdentityFile, err = resolveIdentityValue(ctx, *identityFlag)
+				if err != nil {
+					return Config{}, err
 				}
 			case *identityCommandFlag != "":
 				key, err := runKeyCommand(ctx, *identityCommandFlag)
@@ -188,7 +193,11 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 			case os.Getenv("AGE_KEY_FILE") != "":
 				ageIdentityFile = os.Getenv("AGE_KEY_FILE")
 			case os.Getenv("AGE_KEY") != "":
-				ageIdentity = os.Getenv("AGE_KEY")
+				var err error
+				ageIdentity, ageIdentityFile, err = resolveIdentityValue(ctx, os.Getenv("AGE_KEY"))
+				if err != nil {
+					return Config{}, err
+				}
 			case os.Getenv("SOPS_AGE_KEY_FILE") != "":
 				ageIdentityFile = os.Getenv("SOPS_AGE_KEY_FILE")
 			case os.Getenv("SOPS_AGE_KEY") != "":

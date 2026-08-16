@@ -28,6 +28,38 @@ func TestScript(t *testing.T) {
 	})
 }
 
+func TestParseConfigAgeKeyPrefixes(t *testing.T) {
+	workDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name     string
+		value    string
+		expected string
+	}{
+		{name: "file", value: "file:" + os.DevNull},
+		{name: "cmd", value: "cmd:sh -c pwd", expected: workDir},
+		{name: "command", value: "command:sh -c pwd", expected: workDir},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("AGE_IDENTITY_FILE", "")
+			t.Setenv("AGE_IDENTITY", "")
+			t.Setenv("AGE_KEY_FILE", "")
+			t.Setenv("AGE_KEY", test.value)
+
+			cfg, err := parseConfig(t.Context(), []string{"--decrypt"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.ageIdentity != test.expected {
+				t.Fatalf("age identity = %q, want %q", cfg.ageIdentity, test.expected)
+			}
+		})
+	}
+}
+
 func testPluginMain() {
 	p, err := plugin.New("test")
 	if err != nil {
