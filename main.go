@@ -113,6 +113,10 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 		return Config{}, err
 	}
 
+	if *versionFlag {
+		return Config{version: true}, nil
+	}
+
 	for _, envVar := range []string{"AGE_RECIPIENT", "AGE_RECIPIENTS", "SOPS_AGE_RECIPIENTS"} {
 		if val := os.Getenv(envVar); val != "" {
 			for _, r := range parseRecipients(val) {
@@ -139,11 +143,6 @@ func parseConfig(ctx context.Context, args []string) (Config, error) {
 	cfg := Config{
 		ageRecipients: recipients,
 		agePluginPath: *agePluginPathFlag,
-		version:       *versionFlag,
-	}
-
-	if cfg.version {
-		return cfg, nil
 	}
 
 	if (*encrypt && *decrypt) || (!*encrypt && !*decrypt) {

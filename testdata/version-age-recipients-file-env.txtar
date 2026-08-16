@@ -1,0 +1,4 @@
+env AGE_RECIPIENTS_FILE=$WORK/missing.txt
+exec tofu-age-encryption version
+stdout 'tofu-age-encryption version [0-9]+\.[0-9]+\.[0-9]+'
+! stderr .
