@@ -1,0 +1,3 @@
+! exec tofu-age-encryption --version unexpected
+! stdout .
+stderr 'unexpected argument "unexpected"'
