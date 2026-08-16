@@ -312,7 +312,7 @@ func ageEncryptPayload(cfg *Config, payload []byte) ([]byte, error) {
 	for r := range cfg.ageRecipients {
 		parsed, err := parseRecipientString(r)
 		if err != nil {
-			return nil, fmt.Errorf("invalid recipient %q: %w", r, err)
+			return nil, errors.New("invalid recipient")
 		}
 		recipients = append(recipients, parsed)
 	}

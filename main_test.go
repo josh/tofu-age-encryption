@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"filippo.io/age"
@@ -26,6 +27,19 @@ func TestScript(t *testing.T) {
 		ContinueOnError: true,
 		UpdateScripts:   updateScripts,
 	})
+}
+
+func TestAgeEncryptPayloadDoesNotEchoInvalidRecipient(t *testing.T) {
+	const sensitive = "AGE-SECRET-KEY-1SENSITIVE-MATERIAL"
+	cfg := Config{ageRecipients: map[string]bool{sensitive: true}}
+
+	_, err := ageEncryptPayload(&cfg, nil)
+	if err == nil {
+		t.Fatal("expected invalid recipient error")
+	}
+	if strings.Contains(err.Error(), sensitive) {
+		t.Fatalf("error contains recipient value: %v", err)
+	}
 }
 
 func testPluginMain() {
