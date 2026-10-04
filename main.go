@@ -20,7 +20,7 @@ import (
 
 // constants settable at build time.
 var (
-	Version       = "1.1.3"
+	Version       = "1.1.4"
 	AgePluginPath = ""
 )
 
