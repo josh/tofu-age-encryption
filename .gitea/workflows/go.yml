@@ -15,7 +15,7 @@ jobs:
       # renovate: datasource=github-releases depName=FiloSottile/age extractVersion=^v(?<version>.+)$
       AGE_VERSION: "1.3.2"
       # renovate: datasource=github-releases depName=opentofu/opentofu extractVersion=^v(?<version>.+)$
-      TOFU_VERSION: "1.13.2"
+      TOFU_VERSION: "1.13.8"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
